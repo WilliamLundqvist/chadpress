@@ -1,4 +1,4 @@
-import type { ComponentType } from "react"
+import type { ComponentType, ReactNode } from "react"
 
 type WpDefaultType<D> = D extends string
   ? string
@@ -39,6 +39,10 @@ export type InferAttributes<
 }
 
 export interface BlockDefinition<Meta = unknown, Attrs = unknown> {
-  Component: ComponentType<Attrs & { className?: string }>
+  Component: ComponentType<Attrs & { className?: string; children?: ReactNode }>
   meta: Meta
+  getEditableClassName?: (
+    attributes: Record<string, unknown>,
+    className?: string,
+  ) => string
 }

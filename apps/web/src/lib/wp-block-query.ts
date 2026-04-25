@@ -5,9 +5,9 @@ import {
   getBlockDefinition,
   isBlockName,
   type BlockName,
-} from "@repo/ui/blocks"
+} from "@repo/ui/blocks";
 
-import { fetchWordPressGraphql } from "./wordpress"
+import { fetchWordPressGraphql } from "./wordpress";
 
 /**
  * `core/heading` → `CoreHeading` (matches WPGraphQL Content Blocks naming).
@@ -22,44 +22,47 @@ export function blockNameToGraphqlTypeName(blockName: string): string {
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
         .join(""),
     )
-    .join("")
+    .join("");
 }
 
 function buildBlockInlineFragments(): string {
-  const names = Object.keys(blockRegistry) as BlockName[]
+  const names = Object.keys(blockRegistry) as BlockName[];
   return names
     .map((name) => {
-      const gqType = blockNameToGraphqlTypeName(name)
-      const entry = blockRegistry[name]
-      const keys = getBlockAttributeKeys(entry.meta)
-      const fields = keys.length > 0 ? `attributes { ${keys.join(" ")} }` : ""
-      return `... on ${gqType} { ${fields} }`
+      const gqType = blockNameToGraphqlTypeName(name);
+      const entry = blockRegistry[name];
+      const keys = getBlockAttributeKeys(entry.meta);
+      if (keys.length === 0) {
+        return "";
+      }
+      return `... on ${gqType} { attributes { ${keys.join(" ")} } }`;
     })
-    .join("\n")
+    .filter(Boolean)
+    .join("\n");
 }
 
 const coreBlockLine = `
   __typename
   name
   renderedHtml
-`
+`;
 
 /**
  * @param maxInnerDepth - how many nested `innerBlocks` levels to request (0 = no innerBlocks).
  */
 function buildEditorBlockNode(maxInnerDepth: number): string {
-  const frags = buildBlockInlineFragments()
+  const frags = buildBlockInlineFragments();
   if (maxInnerDepth <= 0) {
     return `${coreBlockLine}
-    ${frags}`.trim()
+    ${frags}`.trim();
   }
   return `${coreBlockLine}
     ${frags}
-    innerBlocks { ${buildEditorBlockNode(maxInnerDepth - 1)} }`
+    innerBlocks { ${buildEditorBlockNode(maxInnerDepth - 1)} }`;
 }
 
 /** Four nested levels covers Group → Row → Col → content for most site builds. */
-const EDITOR_BLOCK_BODY = buildEditorBlockNode(3).trim()
+const EDITOR_BLOCK_BODY = buildEditorBlockNode(3).trim();
 
 export const CONTENT_NODE_BY_URI = /* GraphQL */ `
   query ContentNodeByUri($uri: ID!) {
@@ -81,7 +84,7 @@ export const CONTENT_NODE_BY_URI = /* GraphQL */ `
       }
     }
   }
-`.trim()
+`.trim();
 
 export const LATEST_POST_WITH_BLOCKS = /* GraphQL */ `
   query LatestPostBlocks {
@@ -95,49 +98,49 @@ export const LATEST_POST_WITH_BLOCKS = /* GraphQL */ `
       }
     }
   }
-`.trim()
+`.trim();
 
 export type WpEditorBlock = {
-  __typename: string
-  name: string
-  renderedHtml?: string | null
+  __typename: string;
+  name: string;
+  renderedHtml?: string | null;
   /** Present when a typed fragment (e.g. `CoreHeading`) is resolved. */
-  attributes?: Record<string, unknown> | null
-  innerBlocks?: WpEditorBlock[] | null
-}
+  attributes?: Record<string, unknown> | null;
+  innerBlocks?: WpEditorBlock[] | null;
+};
 
 export type LatestPostBlocksData = {
   posts: {
     nodes: Array<{
-      id: string
-      title: string | null
-      editorBlocks: WpEditorBlock[] | null
-    }> | null
-  } | null
-}
+      id: string;
+      title: string | null;
+      editorBlocks: WpEditorBlock[] | null;
+    }> | null;
+  } | null;
+};
 
 export type ContentNodeWithBlocks = {
-  __typename: string
-  id: string
-  uri: string | null
-  title?: string | null
-  editorBlocks?: WpEditorBlock[] | null
-}
+  __typename: string;
+  id: string;
+  uri: string | null;
+  title?: string | null;
+  editorBlocks?: WpEditorBlock[] | null;
+};
 
 export type ContentNodeByUriData = {
-  contentNode: ContentNodeWithBlocks | null
-}
+  contentNode: ContentNodeWithBlocks | null;
+};
 
 export function toWordPressUri(slug?: string[]): string {
   if (!slug?.length) {
-    return "/"
+    return "/";
   }
   const normalized = slug
     .map((segment) => segment.trim())
     .filter(Boolean)
     .map(encodeURIComponent)
-    .join("/")
-  return `/${normalized}/`
+    .join("/");
+  return `/${normalized}/`;
 }
 
 export function normalizeEditorBlock(
@@ -145,19 +148,24 @@ export function normalizeEditorBlock(
   attributes: Record<string, unknown> | null | undefined,
 ) {
   if (!isBlockName(name)) {
-    return null
+    return null;
   }
-  const def = getBlockDefinition(name)
+  const def = getBlockDefinition(name);
   if (!def) {
-    return null
+    return null;
   }
-  return applyAttributeDefaults(def.meta, attributes) as Record<string, unknown>
+  return applyAttributeDefaults(def.meta, attributes) as Record<
+    string,
+    unknown
+  >;
 }
 
 export async function getLatestPostWithBlocks() {
-  return fetchWordPressGraphql<LatestPostBlocksData>(LATEST_POST_WITH_BLOCKS)
+  return fetchWordPressGraphql<LatestPostBlocksData>(LATEST_POST_WITH_BLOCKS);
 }
 
 export async function getContentNodeByUri(uri: string) {
-  return fetchWordPressGraphql<ContentNodeByUriData>(CONTENT_NODE_BY_URI, { uri })
+  return fetchWordPressGraphql<ContentNodeByUriData>(CONTENT_NODE_BY_URI, {
+    uri,
+  });
 }

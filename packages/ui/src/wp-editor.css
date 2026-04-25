@@ -38,6 +38,6 @@
   }
 
   .wp-block-chadpress-button .block-editor-rich-text__editable {
-    @apply min-w-12 outline-none;
+    @apply min-w-12;
   }
 }

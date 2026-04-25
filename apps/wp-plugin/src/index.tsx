@@ -1,6 +1,7 @@
-import type { ComponentType } from "react"
+import type { ComponentType, ReactNode } from "react"
 
 import {
+  InnerBlocks,
   InspectorControls,
   RichText,
   useBlockProps,
@@ -14,21 +15,19 @@ import {
 } from "@wordpress/components"
 
 import {
-  ButtonBlock,
-  getButtonBlockClassName,
-  buttonMeta,
   applyAttributeDefaults,
+  blockRegistry,
   type BlockMeta,
 } from "@repo/ui/blocks"
 
-type AttributeValue = string | number | boolean | unknown[] | Record<string, unknown>
-type Attributes = Record<string, AttributeValue>
+type AttributeValue = unknown
+type Attributes = Record<string, unknown>
 
 type CustomControl = {
   type: string
   bind: string
   label: string
-  options?: Array<string | number>
+  options?: Array<string | number | boolean>
 }
 
 type CustomBlockMeta = BlockMeta & {
@@ -49,10 +48,10 @@ type CustomBlockMeta = BlockMeta & {
 
 type CustomBlockDefinition = {
   meta: CustomBlockMeta
-  Component: ComponentType<Attributes & { className?: string }>
+  Component: ComponentType<Attributes & { className?: string; children?: ReactNode }>
   getEditableClassName?: (
-    attributes: Attributes,
-    editable: EditableConfig,
+    attributes: Record<string, unknown>,
+    className?: string,
   ) => string
 }
 
@@ -62,20 +61,6 @@ type EditableConfig = {
   placeholder: string
   className?: string
 }
-
-const customBlocks: CustomBlockDefinition[] = [
-  {
-    meta: buttonMeta,
-    Component: ButtonBlock as unknown as CustomBlockDefinition["Component"],
-    getEditableClassName(attributes, editable) {
-      return getButtonBlockClassName({
-        variant: String(attributes.variant ?? "default"),
-        size: String(attributes.size ?? "default"),
-        className: editable.className,
-      })
-    },
-  },
-]
 
 const richTextFormatMap = {
   bold: "core/bold",
@@ -150,6 +135,34 @@ function getAllowedRichTextFormats(meta: CustomBlockMeta): string[] {
   )
 }
 
+function isCustomBlockDefinition(
+  definition: unknown,
+): definition is CustomBlockDefinition {
+  const meta = (definition as { meta?: CustomBlockMeta }).meta
+  return meta?.customEditor?.source === "custom"
+}
+
+function getWordPressSupports(meta: CustomBlockMeta) {
+  const { innerBlocks, allowedBlocks, template, ...supports } = meta.supports ?? {}
+
+  if (Object.keys(supports).length === 0) {
+    return undefined
+  }
+
+  return supports
+}
+
+function getInnerBlocksConfig(meta: CustomBlockMeta) {
+  if (!meta.supports?.innerBlocks) {
+    return undefined
+  }
+
+  return {
+    allowedBlocks: meta.supports.allowedBlocks,
+    template: meta.supports.template,
+  }
+}
+
 function GenericBlockEdit({
   definition,
   attributes,
@@ -161,33 +174,46 @@ function GenericBlockEdit({
 }) {
   const { meta, Component, getEditableClassName } = definition
   const editable = meta.customEditor?.editable
+  const innerBlocksConfig = getInnerBlocksConfig(meta)
+  const innerBlocks = innerBlocksConfig ? (
+    <InnerBlocks
+      allowedBlocks={innerBlocksConfig.allowedBlocks}
+      template={innerBlocksConfig.template}
+    />
+  ) : null
 
   if (!editable || !meta.attributes[editable.attribute]?.richText) {
-    return <Component {...attributes} />
+    return <Component {...attributes}>{innerBlocks}</Component>
   }
 
   const className =
-    getEditableClassName?.(attributes, editable) ?? editable.className
+    getEditableClassName?.(attributes, editable.className) ?? editable.className
 
   return (
-    <div className={className}>
-      <RichText
-        tagName={editable.tagName}
-        value={String(attributes[editable.attribute] ?? "")}
-        allowedFormats={getAllowedRichTextFormats(meta)}
-        placeholder={editable.placeholder}
-        onChange={(nextValue) => setAttribute(editable.attribute, nextValue)}
-      />
-    </div>
+    <>
+      <div className={className}>
+        <RichText
+          tagName={editable.tagName}
+          value={String(attributes[editable.attribute] ?? "")}
+          allowedFormats={getAllowedRichTextFormats(meta)}
+          placeholder={editable.placeholder}
+          onChange={(nextValue) => setAttribute(editable.attribute, nextValue)}
+        />
+      </div>
+      {innerBlocks}
+    </>
   )
 }
 
 function registerCustomBlock(definition: CustomBlockDefinition) {
   const { meta } = definition
   const controls = meta.customControls?.inspector ?? []
+  const { supports: ignoredSupports, ...blockSettings } = meta
+  void ignoredSupports
 
   registerBlockType(meta.name, {
-    ...meta,
+    ...blockSettings,
+    supports: getWordPressSupports(meta),
     icon: meta.icon as never,
     edit({ attributes, setAttributes }) {
       const normalized = normalizeAttributes(meta, attributes as Attributes)
@@ -230,5 +256,9 @@ function registerCustomBlock(definition: CustomBlockDefinition) {
     },
   })
 }
+
+const customBlocks = (Object.values(blockRegistry) as unknown[]).filter(
+  isCustomBlockDefinition,
+)
 
 customBlocks.forEach(registerCustomBlock)

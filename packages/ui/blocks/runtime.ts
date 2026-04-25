@@ -4,6 +4,11 @@ import { blockRegistry, type BlockName } from "./registry"
 export type BlockMeta = {
   name: string
   attributes: Record<string, { type: string; default?: unknown; richText?: boolean }>
+  supports?: Record<string, unknown> & {
+    innerBlocks?: boolean
+    allowedBlocks?: string[]
+    template?: unknown[]
+  }
 }
 
 export function isBlockName(name: string): name is BlockName {

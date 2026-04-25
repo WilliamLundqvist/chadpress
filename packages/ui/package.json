@@ -6,6 +6,8 @@
   "exports": {
     ".": "./index.tsx",
     "./globals.css": "./src/globals.css",
+    "./design-tokens.css": "./src/design-tokens.css",
+    "./base.css": "./src/base.css",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./components/ui/*": "./src/components/ui/*.tsx",
@@ -13,9 +15,12 @@
     "./blocks/*": "./blocks/*/index.ts"
   },
   "scripts": {
+    "dev": "pnpm run watch:css",
+    "watch:css": "tailwindcss -i ./src/globals.css -o ./dist/editor.css --watch",
     "build:css": "tailwindcss -i ./src/globals.css -o ./dist/editor.css",
     "dist": "pnpm build:css",
-    "validate:contracts": "node ./scripts/validate-block-contracts.mjs && tsc --noEmit"
+    "generate:registry": "node ./scripts/generate-block-registry.mjs",
+    "validate:contracts": "node ./scripts/generate-block-registry.mjs && node ./scripts/validate-block-contracts.mjs && tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

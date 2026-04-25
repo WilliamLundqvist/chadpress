@@ -5,6 +5,11 @@ declare module "@wordpress/block-editor" {
     children?: React.ReactNode
   }>
 
+  export const InnerBlocks: React.ComponentType<{
+    allowedBlocks?: string[]
+    template?: unknown[]
+  }>
+
   export const RichText: React.ComponentType<{
     tagName: string
     value: string

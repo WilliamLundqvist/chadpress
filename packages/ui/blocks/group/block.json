@@ -1,0 +1,40 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/group",
+  "title": "Group",
+  "category": "design",
+  "icon": "screenoptions",
+  "description": "A Chadpress-native container block for composing nested content.",
+  "textdomain": "chadpress",
+
+  "attributes": {},
+
+  "supports": {
+    "innerBlocks": true,
+    "allowedBlocks": ["core/heading", "core/paragraph", "chadpress/button"],
+    "template": [
+      ["core/heading", { "content": "Group title" }],
+      ["chadpress/button", { "label": "Read more" }]
+    ],
+    "html": false
+  },
+
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+
+  "customEditor": {
+    "source": "custom",
+    "allowedRichText": [],
+    "disabledSupports": []
+  },
+
+  "variations": []
+}
