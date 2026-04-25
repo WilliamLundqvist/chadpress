@@ -1,0 +1,63 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "core/heading",
+  "title": "Heading",
+  "category": "text",
+  "icon": "heading",
+  "description": "Shadow declaration for WordPress core/heading — maps attribute values to shadcn typography variants.",
+  "textdomain": "chadpress",
+
+  "attributes": {
+    "content": { "type": "string", "default": "", "richText": true },
+    "level": { "type": "number", "default": 2 },
+    "textAlign": { "type": "string", "default": "left" }
+  },
+
+  "supports": {
+    "innerBlocks": false,
+    "allowedBlocks": [],
+    "template": []
+  },
+
+  "customTailwind": {
+    "styleMap": {
+      "level": {
+        "1": "h1",
+        "2": "h2",
+        "3": "h3",
+        "4": "h4",
+        "5": "h5",
+        "6": "h6"
+      },
+      "textAlign": {
+        "left": "start",
+        "center": "center",
+        "right": "end"
+      }
+    },
+    "className": ""
+  },
+
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+
+  "customEditor": {
+    "source": "core",
+    "allowedRichText": ["bold", "italic", "link"],
+    "disabledSupports": [
+      "color",
+      "backgroundColor",
+      "fontSize",
+      "__experimentalFontWeight",
+      "__experimentalFontStyle",
+      "__experimentalTextTransform",
+      "__experimentalTextDecoration",
+      "__experimentalLetterSpacing"
+    ]
+  },
+
+  "variations": []
+}

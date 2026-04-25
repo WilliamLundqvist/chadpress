@@ -1,0 +1,79 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/button",
+  "title": "Button",
+  "category": "design",
+  "icon": "button",
+  "description": "A Chadpress-native button block rendered with the shared shadcn Button component.",
+  "textdomain": "chadpress",
+
+  "attributes": {
+    "label": { "type": "string", "default": "Button", "richText": true },
+    "url": { "type": "string", "default": "" },
+    "variant": { "type": "string", "default": "default" },
+    "size": { "type": "string", "default": "default" },
+    "openInNewTab": { "type": "boolean", "default": false }
+  },
+
+  "supports": {
+    "innerBlocks": false,
+    "allowedBlocks": [],
+    "template": [],
+    "html": false
+  },
+
+  "customTailwind": {
+    "styleMap": {
+      "variant": {
+        "default": "default",
+        "secondary": "secondary",
+        "outline": "outline",
+        "ghost": "ghost",
+        "destructive": "destructive",
+        "link": "link"
+      },
+      "size": {
+        "default": "default",
+        "xs": "xs",
+        "sm": "sm",
+        "lg": "lg"
+      }
+    },
+    "className": ""
+  },
+
+  "customControls": {
+    "toolbar": [],
+    "inspector": [
+      { "type": "text", "bind": "url", "label": "URL" },
+      {
+        "type": "select",
+        "bind": "variant",
+        "label": "Variant",
+        "options": ["default", "secondary", "outline", "ghost", "destructive", "link"]
+      },
+      {
+        "type": "select",
+        "bind": "size",
+        "label": "Size",
+        "options": ["default", "xs", "sm", "lg"]
+      },
+      { "type": "toggle", "bind": "openInNewTab", "label": "Open in new tab" }
+    ]
+  },
+
+  "customEditor": {
+    "source": "custom",
+    "editable": {
+      "attribute": "label",
+      "tagName": "span",
+      "placeholder": "Button",
+      "className": "w-fit cursor-text"
+    },
+    "allowedRichText": ["bold", "italic"],
+    "disabledSupports": []
+  },
+
+  "variations": []
+}

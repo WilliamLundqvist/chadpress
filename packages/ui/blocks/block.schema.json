@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "chadpress-block",
+  "title": "Chadpress block contract",
+  "description": "Extends WordPress block.json with chadpress-specific layers: customTailwind, customControls, and reserved composition/i18n fields.",
+  "type": "object",
+  "required": [
+    "name",
+    "title",
+    "attributes",
+    "supports",
+    "customTailwind",
+    "customControls",
+    "variations"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "apiVersion": { "type": "integer" },
+    "name": { "type": "string" },
+    "title": { "type": "string" },
+    "category": { "type": "string" },
+    "icon": { "type": "string" },
+    "description": { "type": "string" },
+    "textdomain": { "type": "string" },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "number",
+              "boolean",
+              "array",
+              "object",
+              "integer"
+            ]
+          },
+          "default": {},
+          "richText": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "supports": {
+      "type": "object",
+      "required": ["innerBlocks", "allowedBlocks", "template"],
+      "properties": {
+        "innerBlocks": { "type": "boolean" },
+        "allowedBlocks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "template": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "customTailwind": {
+      "type": "object",
+      "required": ["styleMap", "className"],
+      "properties": {
+        "styleMap": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "className": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "customControls": {
+      "type": "object",
+      "required": ["toolbar", "inspector"],
+      "properties": {
+        "toolbar": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/customControl" }
+        },
+        "inspector": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/customControl" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "customEditor": {
+      "type": "object",
+      "required": ["source", "allowedRichText", "disabledSupports"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["core", "custom"]
+        },
+        "editable": {
+          "type": "object",
+          "required": ["attribute", "tagName", "placeholder"],
+          "properties": {
+            "attribute": { "type": "string" },
+            "tagName": { "type": "string" },
+            "placeholder": { "type": "string" },
+            "className": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "allowedRichText": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["bold", "italic", "link"]
+          },
+          "uniqueItems": true
+        },
+        "disabledSupports": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "color",
+              "backgroundColor",
+              "fontSize",
+              "__experimentalFontWeight",
+              "__experimentalFontStyle",
+              "__experimentalTextTransform",
+              "__experimentalTextDecoration",
+              "__experimentalLetterSpacing"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "variations": {
+      "type": "array"
+    }
+  },
+  "definitions": {
+    "customControl": {
+      "type": "object",
+      "required": ["type", "bind", "label"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "alignment",
+            "headingLevel",
+            "link",
+            "select",
+            "toggle",
+            "text",
+            "color"
+          ]
+        },
+        "bind": { "type": "string" },
+        "label": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": ["string", "number", "boolean"]
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

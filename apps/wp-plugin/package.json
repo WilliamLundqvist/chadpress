@@ -1,0 +1,22 @@
+{
+  "name": "wp-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wp-scripts build --webpack-src-dir=src --output-path=build",
+    "start": "wp-scripts start --webpack-src-dir=src --output-path=build"
+  },
+  "dependencies": {
+    "@repo/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@wordpress/block-editor": "^15.17.0",
+    "@wordpress/blocks": "^15.17.0",
+    "@wordpress/components": "^32.6.0",
+    "@wordpress/element": "^6.44.0",
+    "@wordpress/scripts": "^30.27.0",
+    "react": "^19.2.5"
+  }
+}

@@ -1,0 +1,43 @@
+/**
+ * 1:1 Gutenberg → frontend typography for `core/heading`.
+ * These utilities mirror `blocks/heading/heading-variants.ts` but target WP’s
+ * editor DOM (see https://github.com/WordPress/gutenberg for class names).
+ */
+@layer components {
+  .wp-block-heading {
+    @apply scroll-m-20;
+  }
+
+  h1.wp-block-heading {
+    @apply text-4xl font-extrabold tracking-tight text-balance lg:text-5xl;
+  }
+  h2.wp-block-heading {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+  h3.wp-block-heading {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  h4.wp-block-heading {
+    @apply text-xl font-semibold tracking-tight;
+  }
+  h5.wp-block-heading {
+    @apply text-lg font-semibold tracking-tight;
+  }
+  h6.wp-block-heading {
+    @apply text-base font-semibold tracking-tight;
+  }
+
+  .wp-block-heading.has-text-align-left {
+    @apply text-start;
+  }
+  .wp-block-heading.has-text-align-center {
+    @apply text-center;
+  }
+  .wp-block-heading.has-text-align-right {
+    @apply text-end;
+  }
+
+  .wp-block-chadpress-button .block-editor-rich-text__editable {
+    @apply min-w-12 outline-none;
+  }
+}
