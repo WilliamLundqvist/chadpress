@@ -13,6 +13,30 @@ if (! defined('ABSPATH')) {
 }
 
 /**
+ * Register a block inserter category for Chadpress-native blocks.
+ *
+ * `layout` and other ad-hoc slugs are not core categories; unregistered
+ * categories can hide blocks from the inserter. Use `chadpress` for our blocks.
+ */
+add_filter(
+	'block_categories_all',
+	static function (array $categories, $editor_context) {
+		return array_merge(
+			$categories,
+			array(
+				array(
+					'slug'  => 'chadpress',
+					'title' => 'Chadpress',
+					'icon'  => null,
+				),
+			)
+		);
+	},
+	10,
+	2
+);
+
+/**
  * Directory where DDEV mounts `monorepo/packages/ui`.
  */
 const CHADPRESS_UI_DIR = __DIR__ . '/chadpress-ui';

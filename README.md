@@ -38,14 +38,23 @@ your-projects/
   wp/                 ← WordPress + .ddev (not in git; create separately)
 ```
 
-Example DDEV `docker-compose.mounts.yaml` volume entries (paths relative to `wp/.ddev/`):
+Example DDEV `docker-compose.mounts.yaml` volume entries (paths relative to `wp/.ddev/`). App source lives under `monorepo/` in this repository:
+
+**WordPress in the same repo** (`chadpress/wp/` next to `chadpress/monorepo/`):
 
 ```yaml
-- ../chadpress/apps/wp-plugin:/var/www/html/wp-content/plugins/chadpress-plugin
-- ../chadpress/packages/ui:/var/www/html/wp-content/plugins/chadpress-plugin/chadpress-ui:cached
+- ../../monorepo/apps/wp-plugin:/var/www/html/wp-content/plugins/chadpress-plugin
+- ../../monorepo/packages/ui:/var/www/html/wp-content/plugins/chadpress-plugin/chadpress-ui:cached
 ```
 
-Adjust `chadpress` if your clone directory has another name. After changing mounts, `ddev restart` from the `wp` project.
+**WordPress in a sibling folder** (`parent/chadpress` clone + `parent/wp/`), with `monorepo/` inside the clone:
+
+```yaml
+- ../chadpress/monorepo/apps/wp-plugin:/var/www/html/wp-content/plugins/chadpress-plugin
+- ../chadpress/monorepo/packages/ui:/var/www/html/wp-content/plugins/chadpress-plugin/chadpress-ui:cached
+```
+
+After changing mounts, `ddev restart` from the `wp` project.
 
 ## Environment (Next.js)
 

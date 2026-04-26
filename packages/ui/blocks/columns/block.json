@@ -1,20 +1,21 @@
 {
   "$schema": "../block.schema.json",
   "apiVersion": 3,
-  "name": "core/group",
-  "title": "Group",
+  "name": "core/columns",
+  "title": "Columns",
   "category": "design",
-  "icon": "screenoptions",
-  "description": "Shadow declaration for core/group — map layout attribute to flex/grid/flow in the headless renderer.",
+  "icon": "columns",
+  "description": "Shadow for core/columns — flex row of core/column in the headless renderer.",
   "textdomain": "chadpress",
   "attributes": {
-    "tagName": { "type": "string", "default": "div" },
-    "layout": { "type": "object" },
-    "style": { "type": "object" }
+    "verticalAlignment": { "type": "string" },
+    "isStackedOnMobile": { "type": "boolean", "default": true },
+    "style": { "type": "object" },
+    "layout": { "type": "object" }
   },
   "supports": {
     "innerBlocks": true,
-    "allowedBlocks": [],
+    "allowedBlocks": ["core/column"],
     "template": []
   },
   "customTailwind": {

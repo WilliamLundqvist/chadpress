@@ -40,4 +40,33 @@
   .wp-block-chadpress-button .block-editor-rich-text__editable {
     @apply min-w-12;
   }
+
+  /**
+   * `> *` only widens the block wrapper. The chadpress button editor uses RichText with
+   * `w-fit` in `block.json`, and the shadcn `Button` is `inline-flex shrink-0` on the
+   * frontend, so the control needs these descendant rules in a stretched stack.
+   */
+  .is-layout-flex.is-vertical.is-content-justification-stretch > *,
+  .is-layout-flex.flex-col.items-stretch > * {
+    @apply w-full min-w-0;
+  }
+
+  /* `!` beats `w-fit` on the RichText shell from `block.json` + `getButtonBlockClassName`. */
+  .is-layout-flex.is-vertical.is-content-justification-stretch
+    .wp-block-chadpress-button
+    > div,
+  .is-layout-flex.flex-col.items-stretch
+    .wp-block-chadpress-button
+    > div {
+    @apply !w-full !min-w-0;
+  }
+
+  .is-layout-flex.is-vertical.is-content-justification-stretch
+    .wp-block-chadpress-button
+    [data-slot="button"],
+  .is-layout-flex.flex-col.items-stretch
+    .wp-block-chadpress-button
+    [data-slot="button"] {
+    @apply !w-full !min-w-0 shrink;
+  }
 }

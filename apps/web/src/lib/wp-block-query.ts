@@ -61,8 +61,8 @@ function buildEditorBlockNode(maxInnerDepth: number): string {
     innerBlocks { ${buildEditorBlockNode(maxInnerDepth - 1)} }`;
 }
 
-/** Four nested levels covers Group → Row → Col → content for most site builds. */
-const EDITOR_BLOCK_BODY = buildEditorBlockNode(3).trim();
+/** Deeper tree for Group → Columns → Column → content and similar. */
+const EDITOR_BLOCK_BODY = buildEditorBlockNode(4).trim();
 
 export const CONTENT_NODE_BY_URI = /* GraphQL */ `
   query ContentNodeByUri($uri: ID!) {

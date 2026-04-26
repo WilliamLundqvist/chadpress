@@ -8,6 +8,18 @@ export {
   getButtonRel,
   blockDefinition as buttonBlockDefinition,
 } from "./button"
+export type { ColumnAttributes } from "./column"
+export {
+  Column,
+  columnMeta,
+  blockDefinition as columnBlockDefinition,
+} from "./column"
+export type { ColumnsAttributes } from "./columns"
+export {
+  Columns,
+  columnsMeta,
+  blockDefinition as columnsBlockDefinition,
+} from "./columns"
 export type { GroupAttributes } from "./group"
 export {
   Group,

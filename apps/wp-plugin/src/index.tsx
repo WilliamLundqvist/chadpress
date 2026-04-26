@@ -83,10 +83,12 @@ function CustomControlField({
   control,
   value,
   setAttribute,
+  attributeType,
 }: {
   control: CustomControl
   value: AttributeValue | undefined
   setAttribute: (name: string, value: AttributeValue) => void
+  attributeType?: string
 }) {
   if (control.type === "select") {
     return (
@@ -94,7 +96,14 @@ function CustomControlField({
         label={control.label}
         value={String(value ?? "")}
         options={controlOptions(control)}
-        onChange={(next) => setAttribute(control.bind, next)}
+        onChange={(next) => {
+          if (attributeType === "number" || attributeType === "integer") {
+            const n = Number(next)
+            setAttribute(control.bind, Number.isFinite(n) ? n : next)
+            return
+          }
+          setAttribute(control.bind, next)
+        }}
       />
     )
   }
@@ -157,9 +166,11 @@ function getInnerBlocksConfig(meta: CustomBlockMeta) {
     return undefined
   }
 
+  const { allowedBlocks, template } = meta.supports
   return {
-    allowedBlocks: meta.supports.allowedBlocks,
-    template: meta.supports.template,
+    // Empty `[]` in block.json means "no restriction" (all blocks), not "none".
+    allowedBlocks: allowedBlocks?.length ? allowedBlocks : undefined,
+    template,
   }
 }
 
@@ -233,6 +244,7 @@ function registerCustomBlock(definition: CustomBlockDefinition) {
                     control={control}
                     value={normalized[control.bind]}
                     setAttribute={setAttribute}
+                    attributeType={meta.attributes?.[control.bind]?.type}
                   />
                 ))}
               </PanelBody>

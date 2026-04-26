@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "chadpress/button",
   "title": "Button",
-  "category": "design",
+  "category": "chadpress",
   "icon": "button",
   "description": "A Chadpress-native button block rendered with the shared shadcn Button component.",
   "textdomain": "chadpress",

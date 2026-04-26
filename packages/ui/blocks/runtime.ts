@@ -29,6 +29,36 @@ export function getBlockAttributeKeys<M extends { attributes: Record<string, unk
 }
 
 /**
+ * WPGraphQL Content Blocks uses `BlockAttributesObject` for untyped `object` attributes
+ * and serializes them with `json_encode` — the GraphQL response often delivers a **string**
+ * that must be parsed before React can read `layout`, `style`, etc.
+ */
+export function parseBlockObjectAttr(value: unknown): Record<string, unknown> | undefined {
+  if (value === null || value === undefined) {
+    return undefined
+  }
+  if (typeof value === "string") {
+    const t = value.trim()
+    if (t === "") {
+      return undefined
+    }
+    try {
+      const p = JSON.parse(t) as unknown
+      if (p !== null && typeof p === "object" && !Array.isArray(p)) {
+        return p as Record<string, unknown>
+      }
+    } catch {
+      return undefined
+    }
+    return undefined
+  }
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return undefined
+}
+
+/**
  * Merges GraphQL / REST `attributes` with `default` from `block.json` when a
  * value is `null` or `undefined` (WordPress may omit or null optional fields).
  */
@@ -42,6 +72,15 @@ export function applyAttributeDefaults<M extends BlockMeta>(
       const spec = meta.attributes[key] as { default?: unknown }
       if (Object.prototype.hasOwnProperty.call(spec, "default")) {
         out[key] = spec.default
+      }
+    }
+  }
+  for (const key of Object.keys(meta.attributes)) {
+    const spec = meta.attributes[key] as { type?: string }
+    if (spec.type === "object" && typeof out[key] === "string") {
+      const parsed = parseBlockObjectAttr(out[key])
+      if (parsed !== undefined) {
+        out[key] = parsed
       }
     }
   }

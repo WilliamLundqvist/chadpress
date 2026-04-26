@@ -205,6 +205,12 @@ Each entry is typed with `BlockDefinition<MetaShape, AttrShape>` for per-block t
 - CSS-variable-driven block styling. The theme already owns those via `globals.css`; the contract owns semantic tokens, not raw color math.
 - Inline rich-text editor logic in components. `richText: true` is a *flag* for Phase 3; the Phase 2 component just renders a string.
 
+## Layout: use `core/group` and `core/columns` (not custom wrappers)
+
+**Do not** add Chadpress-only layout container blocks. WordPress’s **Group** (flow, row, stack, grid) and **Columns / Column** own the editor experience and the serialized `layout` / `width` attributes. We supply **shadow** declarations in [`group/`](./group/), [`columns/`](./columns/), and [`column/`](./column/) and map those attributes to Tailwind in the React layer — see `group-layout.ts` and the Columns/Column components.
+
+Object attributes such as `layout` and `style` may arrive from WPGraphQL Content Blocks as **JSON strings**; [`applyAttributeDefaults`](./runtime.ts) (see `parseBlockObjectAttr`) coerces them to objects before components read them.
+
 ## Reference: the `heading` block
 
 [`heading/block.json`](./heading/block.json) is the canonical example. When adding a second block, mimic its shape — don't reinvent the structure.

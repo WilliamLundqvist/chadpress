@@ -6,9 +6,19 @@ import {
   type WpEditorBlock,
 } from "../lib/wp-block-query";
 
+const LAYOUT_ANCESTORS = new Set([
+  "core/group",
+  "core/columns",
+  "core/column",
+]);
+
 type BlockRendererProps = {
   blocks: WpEditorBlock[] | null | undefined;
 };
+
+function isLayoutContainer(name: string): boolean {
+  return LAYOUT_ANCESTORS.has(name);
+}
 
 /**
  * Renders a flat (or tree) of WPGraphQL `editorBlocks` by looking up
@@ -22,13 +32,22 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
   return (
     <div className="chadpress-blocks max-w-7xl mx-auto w-full space-y-4">
       {blocks.map((block, index) => (
-        <BlockNode key={`${block.name}-${index}`} block={block} />
+        <BlockNode
+          key={`${block.name}-${index}`}
+          block={block}
+        />
       ))}
     </div>
   );
 }
 
-function BlockNode({ block }: { block: WpEditorBlock }) {
+function BlockNode({
+  block,
+  parentName,
+}: {
+  block: WpEditorBlock;
+  parentName?: string;
+}) {
   if (!isBlockName(block.name)) {
     if (process.env.NODE_ENV === "development") {
       return (
@@ -55,17 +74,39 @@ function BlockNode({ block }: { block: WpEditorBlock }) {
     Record<string, unknown> & { className?: string; children?: ReactNode }
   >;
   const supportsInnerBlocks = Boolean(def.meta.supports?.innerBlocks);
+  const isChildOfLayout =
+    parentName !== undefined && isLayoutContainer(parentName);
+  const innerUseContents =
+    supportsInnerBlocks && isLayoutContainer(block.name);
+
   const innerBlocks =
     block.innerBlocks && block.innerBlocks.length > 0 ? (
-      <div className="chadpress-inner relative mt-2 space-y-2 border-l-2 border-neutral-200 pl-3">
+      <div
+        className={
+          innerUseContents
+            ? "contents"
+            : "chadpress-inner relative mt-2 space-y-2 border-l-2 border-neutral-200 pl-3"
+        }
+      >
         {block.innerBlocks.map((child, index) => (
-          <BlockNode key={`${child.name}-nested-${index}`} block={child} />
+          <BlockNode
+            key={`${child.name}-nested-${index}`}
+            block={child}
+            parentName={block.name}
+          />
         ))}
       </div>
     ) : null;
 
   return (
-    <div className="chadpress-block" data-wp-block={block.name}>
+    <div
+      className={
+        isChildOfLayout
+          ? "chadpress-block contents"
+          : "chadpress-block"
+      }
+      data-wp-block={block.name}
+    >
       <Comp
         {...(raw as Record<string, unknown>)}
         className="chadpress-block__inner"

@@ -1,15 +1,15 @@
 {
   "$schema": "../block.schema.json",
   "apiVersion": 3,
-  "name": "core/group",
-  "title": "Group",
+  "name": "core/column",
+  "title": "Column",
   "category": "design",
-  "icon": "screenoptions",
-  "description": "Shadow declaration for core/group — map layout attribute to flex/grid/flow in the headless renderer.",
+  "icon": "editor-table",
+  "description": "Shadow for core/column — width and vertical alignment in the headless renderer.",
   "textdomain": "chadpress",
   "attributes": {
-    "tagName": { "type": "string", "default": "div" },
-    "layout": { "type": "object" },
+    "verticalAlignment": { "type": "string" },
+    "width": { "type": "string" },
     "style": { "type": "object" }
   },
   "supports": {

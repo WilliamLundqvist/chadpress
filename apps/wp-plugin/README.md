@@ -6,19 +6,21 @@ It also reads each mounted `packages/ui/blocks/*/block.json` and applies `custom
 
 ## DDEV mounts
 
-WordPress/DDEV is **not** in this repository. In your local WordPress project, add bind mounts under `web` in `.ddev/docker-compose.mounts.yaml`. Paths below are relative to `wp/.ddev/` when this monorepo clone is a **sibling** folder named `chadpress`:
+WordPress/DDEV is **not** in the monorepo tree as committed code, but the sample `chadpress/wp` project in this parent repo is wired with `.ddev/docker-compose.mounts.yaml`. Paths are **relative to `wp/.ddev/`** and must point at the real `monorepo/apps` and `monorepo/packages` directories — **not** `../chadpress/...` from `wp/.ddev/` (that resolves to a bogus `wp/chadpress/` path and an empty or broken plugin).
+
+**Same parent repo** (`chadpress/wp` next to `chadpress/monorepo`):
 
 ```yaml
 services:
   web:
     volumes:
-      - ../chadpress/apps/wp-plugin:/var/www/html/wp-content/plugins/chadpress-plugin
-      - ../chadpress/packages/ui:/var/www/html/wp-content/plugins/chadpress-plugin/chadpress-ui:cached
+      - ../../monorepo/apps/wp-plugin:/var/www/html/wp-content/plugins/chadpress-plugin
+      - ../../monorepo/packages/ui:/var/www/html/wp-content/plugins/chadpress-plugin/chadpress-ui:cached
 ```
 
-Rename `chadpress` if your clone directory differs.
+**Sibling `wp` project** next to a clone: use `../<clone_name>/monorepo/apps/...` and `../<clone_name>/monorepo/packages/...`.
 
-In the monorepo, `apps/wp-plugin/chadpress-ui` is a **symlink** to `../../packages/ui`. That way your editor shows blocks, `dist/`, and source — not an empty directory. (DDEV’s bind mount targets the same `packages/ui` path inside the container; the symlink is for host-side clarity and matches what PHP reads when paths resolve on disk.)
+In the monorepo, `apps/wp-plugin/chadpress-ui` is a **symlink** to `../../packages/ui` so the editor sees `packages/ui` under the plugin path on the host. **Inside DDEV,** the second bind mount **replaces** that path with the real `packages/ui`; the host symlink’s relative target does *not* resolve inside the container (`../../packages/ui` from `.../wp-content/plugins/...` would be wrong), so the mount line is **required** for WordPress, not optional.
 
 If you see an **empty** `chadpress-ui` on disk, something likely created a real empty folder; remove it and restore the symlink, or re-clone. Do not expect a second copy of the UI inside the plugin tree.
 
