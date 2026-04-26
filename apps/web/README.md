@@ -1,18 +1,28 @@
-# Chadpress web (Next.js) — universal WordPress renderer
+# apps/web — Next.js renderer
 
-## WordPress + GraphQL
+Renders WordPress pages by URI: `contentNode(id: $uri, idType: URI)` and `editorBlocks`, using the same `block.json` contracts as `packages/ui/blocks/` via `blockRegistry`.
 
-The app resolves the current URL as a WordPress URI and renders `editorBlocks` with **WPGraphQL Content Blocks** using component lookup from `@repo/ui`’s `blockRegistry` — the same `block.json` contracts as in `../../packages/ui/blocks/`.
+## Prerequisites
 
-- `/` maps to WordPress URI `/`.
-- `/about` maps to WordPress URI `/about/`.
-- `/blog/my-post` maps to WordPress URI `/blog/my-post/`.
+- Running WordPress with **WPGraphQL** and **WPGraphQL Content Blocks** active  
+  (see [../wp-plugin/README.md](../wp-plugin/README.md) for DDEV mounts and `bootstrap-plugins`.)
 
-Routing lives in `src/app/page.tsx` for `/` and `src/app/[...slug]/page.tsx` for every non-root path; both call `WpContentPage`, which queries `contentNode(id: $uri, idType: URI)`.
+## Environment
 
-1. In DDEV, install and activate **WPGraphQL** and **WPGraphQL Content Blocks** (see your DDEV `bootstrap-plugins` host command or install manually, and [apps/wp-plugin/README.md](../wp-plugin/README.md)).
-2. Create a published page/post with a **Heading** (core) block.
-3. Copy `.env.local.example` to `.env.local` and set `WORDPRESS_GRAPHQL_URL` if your DDEV URL is not the default `https://chadpress.ddev.site/graphql`.
+Copy `.env.local.example` to `.env.local`.
+
+- **`WORDPRESS_GRAPHQL_URL`** — full URL to the GraphQL endpoint (e.g. `https://your-site.ddev.site/graphql`).
+- **Important:** this URL is called from **Node** during SSR/RSC. If the browser can open DDEV but `pnpm dev` shows `fetch failed`, use a URL that resolves from your dev machine (try `http://`, `127.0.0.1` + port from `ddev describe`, or `host.docker.internal` depending on setup). The error page in development lists attempts and hints.
+
+## Routing
+
+| App path | WordPress URI (typical) |
+|----------|-------------------------|
+| `/` | `/` |
+| `/about` | `/about/` |
+| `/blog/post` | `/blog/post/` |
+
+Implemented in `src/app/page.tsx` and `src/app/[...slug]/page.tsx`, both using `WpContentPage`.
 
 ## Commands
 
@@ -22,12 +32,12 @@ pnpm --filter web build
 pnpm --filter web lint
 ```
 
-## Block registry contract
+## Blocks
 
-Only blocks present in `packages/ui/blocks/registry.ts` (backed by each folder’s `block.json`) are rendered. Others show a small dev notice (development only) or are omitted in production. Future blocks should not require route changes: add a shadow declaration + component + registry entry in `packages/ui/blocks/`.
+Only blocks registered in `packages/ui/blocks` / `blockRegistry` render with a component; others may show a dev-only notice. See [../../packages/ui/blocks/README.md](../../packages/ui/blocks/README.md). Query shape: `src/lib/wp-block-query.ts`.
 
-## Manual smoke test
+## Smoke test
 
-- With DDEV and plugins running, `pnpm --filter web dev` and open `/`.
-- Open a known WordPress URL like `/sample-page`.
-- You should see the WordPress title and the same heading output as the shared `Heading` component (via GraphQL `attributes` + defaults from `block.json`).
+1. `pnpm --filter @repo/ui build:css` and `pnpm --filter wp-plugin build` if you changed UI or the editor bundle.
+2. Set `.env.local` so GraphQL works from the shell running `pnpm dev` (try `curl -X POST` with a minimal query if unsure).
+3. `pnpm --filter web dev` → open `/` and a known page slug.

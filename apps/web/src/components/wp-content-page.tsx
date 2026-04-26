@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { BlockRenderer } from "./block-renderer";
+import { WpGraphqlErrorPanel } from "./wp-graphql-error-panel";
 import { getContentNodeByUri } from "../lib/wp-block-query";
 
 type WpContentPageProps = {
@@ -9,38 +10,16 @@ type WpContentPageProps = {
 
 export async function WpContentPage({ uri }: WpContentPageProps) {
   let data: Awaited<ReturnType<typeof getContentNodeByUri>> | null = null;
-  let errorMessage: string | null = null;
+  let caught: unknown = null;
 
   try {
     data = await getContentNodeByUri(uri);
   } catch (e) {
-    errorMessage =
-      e instanceof Error ? e.message : "Unknown error calling WPGraphQL";
+    caught = e;
   }
 
-  if (errorMessage) {
-    return (
-      <div className="mx-auto max-w-2xl px-6 py-12">
-        <h1 className="text-2xl font-semibold text-red-800">
-          Chadpress renderer
-        </h1>
-        <p className="mt-4 text-neutral-700">
-          <span className="font-medium">
-            Could not load WordPress via GraphQL.
-          </span>{" "}
-          {errorMessage}
-        </p>
-        <p className="mt-2 text-sm text-neutral-500">
-          URI:{" "}
-          <code className="rounded bg-neutral-100 px-1.5 py-0.5">{uri}</code>.
-          Ensure DDEV is running,{" "}
-          <code className="rounded bg-neutral-100 px-1.5 py-0.5">
-            WORDPRESS_GRAPHQL_URL
-          </code>{" "}
-          is correct, and WPGraphQL + WPGraphQL Content Blocks are active.
-        </p>
-      </div>
-    );
+  if (caught) {
+    return <WpGraphqlErrorPanel uri={uri} error={caught} />;
   }
 
   const node = data?.contentNode;

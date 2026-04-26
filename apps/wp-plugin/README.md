@@ -1,14 +1,19 @@
-# Chadpress WordPress plugin (Phase 3)
+# apps/wp-plugin — Chadpress WordPress plugin
 
-Injects [`@repo/ui`](../../packages/ui) **editor CSS** into the Gutenberg iframe so `core/heading` (and future core blocks) preview with the same typography scale as the Next.js frontend.
+Injects **`@repo/ui`** editor styles into the Gutenberg iframe (`add_editor_style` → `chadpress-ui/dist/editor.css`) so core and custom blocks match Next.js typography/tokens.
 
-It also reads each mounted `packages/ui/blocks/*/block.json` and applies `customEditor.disabledSupports` to matching WordPress core blocks. This keeps Gutenberg from exposing settings the frontend contract does not render yet.
+Also:
 
-## DDEV mounts
+- Reads mounted `packages/ui/blocks/*/block.json` and applies `customEditor.disabledSupports` to matching **core** blocks (declaration-driven).
+- Registers **`chadpress/*`** blocks that use `customEditor.source: "custom"` and enqueues the built editor script (`build/index.js`).
 
-WordPress/DDEV is **not** in the monorepo tree as committed code, but the sample `chadpress/wp` project in this parent repo is wired with `.ddev/docker-compose.mounts.yaml`. Paths are **relative to `wp/.ddev/`** and must point at the real `monorepo/apps` and `monorepo/packages` directories — **not** `../chadpress/...` from `wp/.ddev/` (that resolves to a bogus `wp/chadpress/` path and an empty or broken plugin).
+Full-stack setup is summarized in the [monorepo README](../../README.md).
 
-**Same parent repo** (`chadpress/wp` next to `chadpress/monorepo`):
+## DDEV bind mounts (required)
+
+WordPress/DDEV usually lives **next to** the monorepo. Paths below are **relative to `wp/.ddev/`**. They must point at the real `monorepo/apps/wp-plugin` and `monorepo/packages/ui` — not a broken relative path inside `wp/` only.
+
+**Monorepo at `chadpress/monorepo`, WordPress at `chadpress/wp`:**
 
 ```yaml
 services:
@@ -18,37 +23,25 @@ services:
       - ../../monorepo/packages/ui:/var/www/html/wp-content/plugins/chadpress-plugin/chadpress-ui:cached
 ```
 
-**Sibling `wp` project** next to a clone: use `../<clone_name>/monorepo/apps/...` and `../<clone_name>/monorepo/packages/...`.
+If the clone lives elsewhere, adjust (`../<clone>/monorepo/...`).
 
-In the monorepo, `apps/wp-plugin/chadpress-ui` is a **symlink** to `../../packages/ui` so the editor sees `packages/ui` under the plugin path on the host. **Inside DDEV,** the second bind mount **replaces** that path with the real `packages/ui`; the host symlink’s relative target does *not* resolve inside the container (`../../packages/ui` from `.../wp-content/plugins/...` would be wrong), so the mount line is **required** for WordPress, not optional.
+**Symlink vs container:** On the host, `apps/wp-plugin/chadpress-ui` may symlink to `../../packages/ui`. Inside DDEV, the **second volume replaces** that path — the symlink target does not resolve correctly inside the container, so the mount line is mandatory.
 
-If you see an **empty** `chadpress-ui` on disk, something likely created a real empty folder; remove it and restore the symlink, or re-clone. Do not expect a second copy of the UI inside the plugin tree.
+If `chadpress-ui` is an empty folder, delete it and restore the symlink or remount. Then `ddev restart`.
 
-After changing mounts, run `ddev restart` from the WordPress project directory.
-
-## Build CSS (required before editor styles work)
-
-From the monorepo root:
+## Builds (from monorepo root)
 
 ```bash
+# Editor iframe CSS → packages/ui/dist/editor.css (visible as chadpress-ui/dist/editor.css in WP)
 pnpm --filter @repo/ui build:css
-```
 
-This writes `packages/ui/dist/editor.css`, which is visible inside the container as `chadpress-ui/dist/editor.css`.
-
-## Build custom block editor JS
-
-Custom `chadpress/*` blocks are registered from the mounted `packages/ui/blocks/*/block.json` declarations. Build the Gutenberg editor adapter from the monorepo root:
-
-```bash
+# Gutenberg bundle for chadpress/* blocks → apps/wp-plugin/build/
 pnpm --filter wp-plugin build
 ```
 
-This writes `apps/wp-plugin/build/index.js` and `index.asset.php`. The PHP plugin attaches that bundle to every declaration with `customEditor.source: "custom"`.
+## Core block policy (`customEditor` on shadows)
 
-## Core block support policy
-
-Example from `packages/ui/blocks/heading/block.json`:
+Example — `packages/ui/blocks/heading/block.json`:
 
 ```json
 "customEditor": {
@@ -58,56 +51,28 @@ Example from `packages/ui/blocks/heading/block.json`:
 }
 ```
 
-The plugin maps those disabled supports to WordPress block supports:
+The plugin maps `disabledSupports` to WordPress block supports so the editor does not expose options the frontend contract does not implement.
 
-- `color` → text/link color controls off
-- `backgroundColor` → background/gradient controls off
-- `fontSize` → typography font-size control off
+## Plugins (one-time per environment)
 
-This is intentionally declaration-driven. If the editor allows a setting, the matching `block.json`, GraphQL query generation, and React component must support it.
-
-## Install third-party GraphQL plugins (one-time per environment)
-
-From the WordPress / DDEV project (e.g. `chadpress/wp`):
+From the WordPress/DDEV directory:
 
 ```bash
 ddev bootstrap-plugins
 ```
 
-Or by hand: install **WPGraphQL** from WordPress.org; install **WPGraphQL Content Blocks** from [wpengine/wp-graphql-content-blocks releases](https://github.com/wpengine/wp-graphql-content-blocks/releases).
+Or install **WPGraphQL** (wordpress.org) and **WPGraphQL Content Blocks** ([releases](https://github.com/wpengine/wp-graphql-content-blocks/releases)) manually.
 
-## Manual smoke test (Phase 3)
+## Smoke test
 
-1. `pnpm --filter @repo/ui build:css`
-2. `ddev restart` (if you changed mounts)
-3. `ddev bootstrap-plugins` (or install plugins manually)
-4. In wp-admin, activate **Chadpress** and ensure **WPGraphQL** and **WPGraphQL Content Blocks** are active
-5. Create a post, add a **core Heading** block, set level and alignment — preview should use Chadpress typography
-6. Open the GraphiQL / WPGraphQL IDE and run (adjust the query if your field names differ slightly):
+1. `pnpm --filter @repo/ui build:css` (+ `pnpm --filter wp-plugin build` if you use custom blocks)
+2. `ddev restart` after mount changes
+3. Activate **Chadpress**, **WPGraphQL**, **WPGraphQL Content Blocks**
+4. Edit a post with a **Heading** (or your blocks) — preview should use shared styles
+5. Optional GraphiQL query for `editorBlocks` / `attributes` — see older docs or WPGraphQL IDE
 
-   ```graphql
-   query {
-     posts(first: 1) {
-       nodes {
-         editorBlocks {
-           name
-           ... on CoreHeading {
-             attributes {
-               content
-               level
-               textAlign
-             }
-           }
-         }
-       }
-     }
-   }
-   ```
+If `editorBlocks` is missing, Content Blocks is inactive or the block type is unsupported.
 
-7. Confirm `content`, `level`, and `textAlign` match the block in the editor
+## Tailwind CLI issues
 
-If `editorBlocks` is missing, ensure **WPGraphQL Content Blocks** is active and the post is saved with a block that plugin supports.
-
-## Build fallback
-
-If `tailwindcss` CLI fails, run the same `build:css` from a machine with `@tailwindcss/cli@^4` installed in `packages/ui` — the input is `src/globals.css` (which imports `src/wp-editor.css`).
+`build:css` uses Tailwind v4 CLI from `packages/ui`. If it fails locally, run the same command in an environment where `packages/ui` devDependencies install cleanly; input is `src/globals.css` (imports `src/wp-editor.css`).

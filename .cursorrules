@@ -1,37 +1,32 @@
-# Projekt: Chadpress (Headless WordPress + Next.js + shadcn/ui)
+# Chadpress — Cursor / agent context
 
-## Arkitektonisk Vision
-Detta är ett monorepo-projekt där frontend (Next.js) och backend (Gutenberg/WordPress) delar exakt samma UI-komponenter och styling (shadcn/ui + Tailwind). WordPress agerar enbart Headless CMS via WPGraphQL.
+## What this repo is
 
-## Teknikstack
-- Pakethanterare: pnpm (workspaces)
-- Byggverktyg: Turborepo
-- Frontend: Next.js (App Router), React, Tailwind CSS, shadcn/ui
-- Backend: WordPress (DDEV), skräddarsytt plugin för blockregistrering
+Monorepo: **Next.js** (`apps/web`) renders WordPress content via **WPGraphQL** + **WPGraphQL Content Blocks**. **@repo/ui** (`packages/ui`) holds shadcn components and **block declarations** (`packages/ui/blocks/*/block.json`). The **Chadpress** WordPress plugin (`apps/wp-plugin`) injects shared editor CSS and registers custom `chadpress/*` blocks from those JSON files.
 
-## Kärnregler (Single Source of Truth)
-1. `block.json` är lagen. All blockkonfiguration (attribut, Tailwind-klasser för wrapper, etc.) MÅSTE deklareras i `packages/ui/blocks/[block-namn]/block.json`.
-2. UI-komponenter i `packages/ui` får ALDRIG innehålla WordPress-specifik kod. De ska vara rena React-komponenter.
-3. Next.js (`apps/web`) agerar endast renderare. Den tar emot block-data via GraphQL och mappar det mot `packages/ui`.
+WordPress/DDEV is usually **outside** this tree; bind-mount the plugin and `packages/ui` into the container — see `apps/wp-plugin/README.md`.
 
-## Utvecklingsfaser (4-stegsraketen)
-*AI: När användaren ber om hjälp, identifiera vilken fas vi är i och föreslå ALDRIG kod som hoppar till framtida faser.*
+## Stack
 
+- pnpm workspaces + Turborepo
+- Next.js App Router, Tailwind, shadcn (`packages/ui`)
+- WordPress + Gutenberg; WPGraphQL + WPGraphQL Content Blocks
 
-## Arkitektoniska Dogmer
+## Non-negotiables
 
-Kontraktet först: Varje nytt block börjar med en block.json. Skriv aldrig React-kod eller PHP-kod för ett block innan dess JSON-schema är definierat.
+1. **`block.json` is the contract** for each block (attributes, supports, `customTailwind`, `customControls`, `customEditor`). Do not add parallel hand-written attribute types in `apps/web`; use registry meta + `applyAttributeDefaults` / `InferAttributes`.
+2. **`packages/ui` stays framework-agnostic** — no WordPress or Next imports inside block components or shared UI.
+3. **`apps/web` is a renderer** — GraphQL in, `BlockRenderer` + `blockRegistry` out. Routing maps URLs to WordPress URIs (`/` → `/`, nested slugs → trailing-slash URI conventions per `wp-block-query`).
 
-Stil-neutralitet: React-komponenter i packages/ui ska ta emot styling-instruktioner via props som mappar till block.json. Undvik godtyckliga Tailwind-klasser direkt i komponenterna som inte finns representerade i blockets metadata.
+## Phases (historical roadmap — all implemented)
 
-Ingen logik-duplicering: Om ett block behöver en specifik validering eller datatransformering, ska den logiken bo i en delad utility-funktion som kan användas av både WP (i edit.js) och Next.js.
+- **Phase 1:** Turborepo, `apps/web`, `apps/wp-plugin`, `packages/ui` with Tailwind/shadcn.
+- **Phase 2:** Declaration engine: `block.json` + schema, registry, typed attributes — see `packages/ui/blocks/README.md`.
+- **Phase 3:** WordPress bridge: plugin enqueues `editor.css`, core shadow blocks + custom `chadpress/*` registration, DDEV mounts.
+- **Phase 4:** Universal block renderer in Next (`WpContentPage`, `BlockRenderer`, `wp-block-query`).
 
-- [x] **Fas 1: Grunden.** Sätta upp Turborepo, pnpm workspaces, Next.js (`apps/web`), tomt WP-plugin (`apps/wp-plugin`) och det delade UI-paketet (`packages/ui`) med Tailwind och shadcn.
-- [x] **Fas 2: Deklarationsmotorn.** Etablera mönstret för hur block definieras. Skapa första `block.json` i `packages/ui`, skriva TypeScript-interfaces som läser JSON-filen, och bygga React-komponenterna.
-- [x] **Fas 3: WordPress-bryggan.** Core-block + WPGraphQL + WPGraphQL Content Blocks; Chadpress-plugin injicerar `editor.css` (1:1 Gutenberg ↔ `@repo/ui`). Se `apps/wp-plugin/README.md` och `wp/.ddev/commands/host/bootstrap-plugins`.
-- [ ] **Fas 4: Block Renderern.** Bygga den dynamiska renderaren i Next.js som tar GraphQL-svaret och mappar `block.name` till rätt shadcn-komponent.
+For **new blocks or contract changes**, read **`packages/ui/blocks/README.md` first** and update that doc if the pattern genuinely changes. Do not bypass its rules silently.
 
-## Declaration Engine (Fas 2 — färdig)
+## Layout blocks
 
-Innan du (AI eller människa) skapar ett nytt block eller ändrar på block-arkitekturen:
-**läs `packages/ui/blocks/README.md` först.** Den är sanningskällan för kontraktet, control-vokabulären, CVA-mönstret, shadcn-policyn och hur registret är uppbyggt. Kringgå inte dess regler — uppdatera dokumentet om mönstret genuint måste förändras.
+Use WordPress **core/group** (stack/row/grid) and **core/columns** / **core/column** with shadow declarations in `packages/ui/blocks/` — avoid ad-hoc layout-only Chadpress blocks unless documented in `blocks/README.md`.

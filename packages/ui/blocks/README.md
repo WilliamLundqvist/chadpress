@@ -2,27 +2,29 @@
 
 > Source of truth for **how blocks are authored** in this monorepo. Read this before creating, modifying, or refactoring any block. If you find yourself wanting to break one of these rules, update this document first — don't silently diverge.
 
+**Repo setup, DDEV mounts, and first-run builds:** [monorepo README](../../../README.md) and [apps/wp-plugin/README.md](../../../apps/wp-plugin/README.md).
+
 ## Prime directive
 
 **`block.json` is the law.** It is the single source of truth for a block's data shape, styling tokens, and editor UX. Every other artifact — TypeScript types, React components, WP `edit.js`, Next.js renderer — must be derived from (or conform to) it. Declare once, consume everywhere.
 
 ## Mapping WordPress **core** blocks (shadow declarations)
 
-> **Fas 3+:** Förstå denna *innan* du föreslår `register_block_type` eller egen Gutenberg-`edit.js`.
+> **Before** suggesting `register_block_type` or a bespoke Gutenberg `edit.js` for a core block, read this section.
 
-**WordPress core** (`core/heading`, `core/paragraph`, `core/image`, …) ger oss redan: Gutenberg-UI, serialisering, klistra från Word, tillgänglighet, översättning, och (med **WPGraphQL + WPGraphQL Content Blocks**) automatiskt GraphQL-schema för `editorBlocks` med attribut-typer.
+**WordPress core** (`core/heading`, `core/paragraph`, `core/image`, …) already provides: Gutenberg UI, serialization, paste, a11y, i18n, and (with **WPGraphQL + WPGraphQL Content Blocks**) a GraphQL schema for `editorBlocks` with attribute types.
 
-Vår mappstrategi:
+Our strategy:
 
-1. **Ingen egen `register_block_type` för samma block** — såvida vi inte ersätter core med goda skäl. Vi använder WPs block som datakälla.
-2. **Skugg-deklaration** i monorepoot: mappen `packages/ui/blocks/heading/` (o.s.v.) innehåller en `block.json` vars `name` matchar exakt WPs, t.ex. `"core/heading"`. Fält som `attributes` speglar en **äkta delmängd** av WPs block-attribut (så vår frontend vet vad som gäller). `customControls.toolbar` / `inspector` är ofta `[]` — WordPress *är* redan `customControls` i editorn när man råkar core.
-3. **Join-nyckel** mellan världar är `block.name` + samma attributsnamn. GraphQL svarar med `{ name: "core/heading", attributes: { content, level, textAlign } }`; Next (fas 4) kör `blockRegistry["core/heading"].Component(attrs)`.
-4. **Design ligger hos oss:** `customTailwind.styleMap` och `customControls` följer fortfarande vår meta-schema, men värden som färdas i GraphQL är **endast** attribut som WP faktiskt sparar. För 1:1 Gutenberg-iframe preview injicerar `apps/wp-plugin` samma design tokens in i admin via `add_editor_style()` (byggd från `packages/ui` → `chadpress-ui/dist/editor.css`, se DDEV volym) — mappat mot WPs DOM (`.wp-block-heading`, `has-text-align-center`, m.m. i `src/wp-editor.css`).
-5. **När skapa vi eget block?** Endast när WPs katalog *inte* täcker vårt use case, eller när vi medvetet byter bort en core-implementation. Varje sådant val dokumenteras här + i relevant `block.json` `description`.
+1. **Do not register the same block again** unless we intentionally replace core. WordPress remains the source of serialized content.
+2. **Shadow declaration** in the monorepo: e.g. `packages/ui/blocks/heading/` contains a `block.json` whose `name` matches WP exactly (`"core/heading"`). `attributes` mirror a **real subset** of WP’s attributes so the frontend knows the contract. `customControls` is often empty for core — WordPress already owns those controls in the editor.
+3. **Join key** across systems: `block.name` + matching attribute names. GraphQL returns `{ name: "core/heading", attributes: { … } }`; Next.js resolves `blockRegistry["core/heading"].Component(attrs)`.
+4. **Design is ours:** `customTailwind.styleMap` and `customControls` follow our schema, but values in GraphQL are **only** what WP persists. For 1:1 Gutenberg iframe preview, `apps/wp-plugin` enqueues the same design tokens via `add_editor_style()` (built from `packages/ui` → `chadpress-ui/dist/editor.css`; see DDEV mount) targeting WP’s DOM (e.g. `.wp-block-heading`, `has-text-align-*` in `src/wp-editor.css`).
+5. **When do we add a Chadpress-only block?** Only when core does not cover the use case, or we deliberately replace a core implementation. Document that here and in the block’s `description`.
 
-**Playbook för nästa kärnblock (t.ex. `core/paragraph`):** samma 8-steg som nedan, men hoppa över steg 6 *registret* om du *bara* förlitar dig på WPs inbyggda block (registret fylls ändå med samma `name` så fas-4-rendering kan slås upp). Lägg till CVA/`-variants.ts` + uppdatera `src/wp-editor.css` så iframen får 1:1-typografin.
+**Playbook for the next core block (e.g. `core/paragraph`):** same eight steps below; you can skip registry-only concerns if you rely entirely on WP’s built-in registration — the monorepo registry still needs the same `name` so the Next renderer can resolve the component. Add CVA / `*-variants.ts` and update `src/wp-editor.css` for iframe parity.
 
-**Registret vs WP (fas 3):** `blockRegistry` används i **Next.js** för att slå upp `Component`, inte för att *registrera* något i WordPress. WP-pluginet behöver **inte** iterera registret så länge vi använder core-block — i stället laddar det bara editor-CSS. Om vi senare låter pluginet auto-registrera *custom* block, återgår vi till `register_block_type` + `block.json` från disken.
+**Registry vs WordPress:** `blockRegistry` is for **Next.js** to look up `Component`, not to register blocks in PHP. For core shadows the plugin mainly loads editor CSS; for `chadpress/*` it reads `block.json` from disk and calls `register_block_type` plus the editor bundle.
 
 ## Core philosophy (five non-negotiables)
 
@@ -186,11 +188,11 @@ If you need a literal union (e.g. `textAlign: "left" | "center" | "right"`), nar
 
 ## The registry
 
-`blockRegistry` in [`registry.ts`](./registry.ts) is the **one object** consumed by three future touchpoints:
+`blockRegistry` in [`registry.ts`](./registry.ts) is the **one object** consumed by these touchpoints:
 
-- **Phase 3 (`apps/wp-plugin`)** — så länge vi mappar **core**-block: enqueues `editor.css` in i Gutenberg så att admin-preview följer samma tokens som `Heading.tsx` (ingen `register_block_type`, ingen `edit.js` från vår sida). För *custom* `chadpress/*` blocks läser pluginet monterade `block.json`-deklarationer och kör `register_block_type`; editor-bundlen importerar samma blockmeta + pure React-komponenter och genererar controls från `customControls`.
-- **Phase 4 (`apps/web`)** will do `const { Component } = blockRegistry[block.name as BlockName]` in its GraphQL renderer.
-- **Any future runtime** (e.g. email templates, Storybook) consumes the same map.
+- **`apps/wp-plugin`:** For core shadows, enqueues `editor.css` into Gutenberg so admin preview matches shared tokens (no extra `register_block_type` from us). For custom `chadpress/*` blocks, reads mounted `block.json` declarations and runs `register_block_type`; the editor bundle imports the same meta + pure React components and builds controls from `customControls`.
+- **`apps/web`:** Resolves `blockRegistry[block.name as BlockName]` in `BlockRenderer` / GraphQL-driven render path.
+- **Any other runtime** (e.g. Storybook) can reuse the same map.
 
 Each entry is typed with `BlockDefinition<MetaShape, AttrShape>` for per-block type safety. If you need runtime validation of incoming data against the meta, use ajv + `block.schema.json` — don't bolt on ad-hoc checks.
 
@@ -215,9 +217,9 @@ Object attributes such as `layout` and `style` may arrive from WPGraphQL Content
 
 [`heading/block.json`](./heading/block.json) is the canonical example. When adding a second block, mimic its shape — don't reinvent the structure.
 
-## Phase 4 — Next.js universal block renderer
+## Next.js universal block renderer (`apps/web`)
 
-The web app (`apps/web`) resolves every route as a WordPress URI (`/` → `/`, `/about` → `/about/`) and fetches that `contentNode` from WPGraphQL. It then dispatches `editorBlocks` on `block.name` into `blockRegistry`.
+The web app resolves every route as a WordPress URI (`/` → `/`, `/about` → `/about/`) and fetches that `contentNode` from WPGraphQL. It dispatches `editorBlocks` on `block.name` into `blockRegistry`.
 
 The GraphQL attribute fields are **generated from each block’s `block.json`** (`getBlockAttributeKeys` on registry `meta`), and defaults are applied with `applyAttributeDefaults` — not a hand-written parallel type in `apps/web`. Adding a future core block should be: shadow declaration + component + registry entry; the universal route stays unchanged.
 
