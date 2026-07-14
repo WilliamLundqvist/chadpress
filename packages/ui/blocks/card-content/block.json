@@ -15,6 +15,7 @@
       "chadpress/heading",
       "chadpress/quote",
       "chadpress/button",
+      "chadpress/image",
       "chadpress/section",
       "chadpress/columns"
     ],

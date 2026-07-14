@@ -1,0 +1,86 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/image",
+  "title": "Image",
+  "category": "chadpress",
+  "icon": "format-image",
+  "description": "An image with native WordPress media library integration.",
+  "textdomain": "chadpress",
+  "attributes": {
+    "id": {
+      "type": "integer",
+      "default": 0,
+      "media": true
+    },
+    "url": { "type": "string", "default": "" },
+    "alt": { "type": "string", "default": "" },
+    "mediaWidth": { "type": "number", "default": 0 },
+    "mediaHeight": { "type": "number", "default": 0 },
+    "sizeSlug": { "type": "string", "default": "large" },
+    "caption": {
+      "type": "string",
+      "default": "",
+      "richText": true,
+      "tagName": "figcaption",
+      "placeholder": "Add caption…"
+    },
+    "objectFit": { "type": "string", "default": "cover" },
+    "linkUrl": { "type": "string", "default": "" }
+  },
+  "supports": {
+    "innerBlocks": false,
+    "allowedBlocks": [],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {
+      "objectFit": {
+        "cover": "cover",
+        "contain": "contain",
+        "fill": "fill"
+      }
+    },
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": [
+      { "type": "text", "bind": "alt", "label": "Alternative text" },
+      {
+        "type": "select",
+        "bind": "sizeSlug",
+        "label": "Resolution",
+        "options": ["thumbnail", "medium", "large", "full"]
+      },
+      {
+        "type": "select",
+        "bind": "objectFit",
+        "label": "Object fit",
+        "options": ["cover", "contain", "fill"]
+      },
+      { "type": "link", "bind": "linkUrl", "label": "Link URL" }
+    ]
+  },
+  "capabilities": ["spacing"],
+  "customEditor": {
+    "source": "custom",
+    "allowedRichText": ["bold", "italic", "link"]
+  },
+  "example": {
+    "attributes": {
+      "id": 0,
+      "url": "https://picsum.photos/seed/chadpress-image/800/450",
+      "alt": "Sample landscape",
+      "mediaWidth": 800,
+      "mediaHeight": 450,
+      "sizeSlug": "large",
+      "caption": "Image block example caption",
+      "objectFit": "cover",
+      "linkUrl": "",
+      "padding": "none"
+    }
+  },
+  "variations": []
+}

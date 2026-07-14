@@ -15,6 +15,8 @@ Before changing blocks, read `packages/ui/blocks/README.md`.
 7. Keep WordPress restricted to the declaration-derived `chadpress/*` allowlist. Do not weaken the allowlist to accommodate an undeclared block.
 8. Keep GraphQL flat: request `editorBlocks(flat: true)` with `clientId` / `parentClientId`, rebuild the tree in the web app, and render through `blockRegistry`. Do not add recursive depth fragments or `renderedHtml` fallbacks.
 9. Generated registry and barrel files come from the filesystem scan. Do not hand-edit them or maintain parallel block lists.
+10. Capability definitions live only in `packages/ui/blocks/capabilities.json`. TypeScript, the contract validator, and the WordPress plugin all read that file; never redeclare capability attributes, controls, or class maps elsewhere.
+11. When validation, tests, or visual checks reveal a bug, fix the system — the contract, schema, validator, shared component, or fixture — so the whole class of bug cannot recur. Do not patch the one page, block instance, or symptom. If a bug got past validation, extend validation to catch it.
 
 ## Block workflow
 
@@ -40,3 +42,23 @@ pnpm validate:contracts
 For every new or changed block, follow: **contract → scaffold → implement → validate → `/dev/blocks` gallery screenshot**. Define representative `example.attributes`, add `example.innerBlocks` for containers, run generation and validation, then visually inspect the real renderer in the gallery. Do not bypass failures or create separate fixture data.
 
 Do not add configurable arbitrary Tailwind branches in components. Map contract values to semantic CVA variants or shared capability classes. Components own complete DOM anatomy, including rich-text slot placement and child content.
+
+## Operations runbook
+
+Topology: this monorepo lives beside the DDEV WordPress project at `../wp` (run `ddev` commands from there). The plugin directory `apps/wp-plugin/chadpress-ui` is a **symlink** to `packages/ui` — never treat it as a copy. `apps/web` is the Next.js frontend.
+
+URLs and access:
+
+- Frontend: `http://localhost:3000` (`pnpm --filter web dev`). Block gallery: `/dev/blocks`. Benchmark page: `/chadpress-benchmark`.
+- WordPress: `http://chadpress.ddev.site`, GraphQL at `/graphql`.
+- Agent editor access: log in at `/wp-login.php` as `chadpress-agent` / `chadpress-agent-dev` (local-dev admin for automated editor verification). Benchmark page editor: `/wp-admin/post.php?post=69&action=edit`. The editor canvas is an iframe named `editor-canvas`.
+
+After changing X, run Y:
+
+- `block.json`, capabilities, or block components → `pnpm --filter @repo/ui validate:contracts`; the editor picks up contract changes on reload (PHP reads block.json live), but component/editor logic changes need `pnpm --filter wp-plugin build`.
+- Styles/Tailwind classes → `pnpm --filter @repo/ui build:css` (editor CSS is served from `packages/ui/dist/editor.css` through the symlink).
+- Added/removed/renamed block folders → `pnpm --filter @repo/ui generate:registry`.
+- `example` fixtures → `pnpm --filter @repo/ui benchmark:sync` regenerates the WordPress benchmark page (id 69) from all fixtures. Never hand-edit that page.
+- The block save format → add a `deprecated` entry in `apps/wp-plugin/src/index.tsx`; never leave stored content unreadable.
+
+Verification loop: unit tests (`pnpm --filter @repo/ui test`, `pnpm --filter web test`) → contracts (`validate:contracts`) → gallery screenshot (`/dev/blocks`) → benchmark frontend (`/chadpress-benchmark`) → benchmark in Gutenberg (log in as `chadpress-agent`, screenshot the canvas, compare with the frontend). Useful WP-CLI checks from `../wp`: `ddev wp eval '...'` to inspect registered blocks, `ddev wp post get 69 --field=post_content` to inspect stored markup.

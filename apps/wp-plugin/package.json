@@ -17,6 +17,7 @@
     "@wordpress/components": "^32.6.0",
     "@wordpress/data": "^10.51.0",
     "@wordpress/element": "^6.44.0",
+    "@wordpress/media-utils": "^5.51.0",
     "@wordpress/scripts": "^30.27.0",
     "react": "^19.2.5"
   }

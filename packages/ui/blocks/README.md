@@ -2,6 +2,8 @@
 
 This directory is the source of truth for block contracts and shared rendering. Chadpress uses an all-custom architecture: every authored block is named `chadpress/*`. Do not add `core/*` declarations, core-block shadows, or adapters that reproduce Gutenberg markup.
 
+**Planning:** [Image / media block — MVP plan & full-product gaps](./docs/image-media-block.md)
+
 ## Architecture
 
 `block.json` defines a block's public contract. Code generation places it in `blockRegistry`, and the same pure React component from `packages/ui` renders it in both runtimes:
@@ -48,12 +50,12 @@ Each `richText: true` attribute becomes a named editor slot. A component renders
 
 ### Capabilities
 
-Capabilities are closed, shared bundles expanded by `capabilities.ts`:
+Capabilities are closed, shared bundles declared once in `capabilities.json` — attributes, controls, and value-to-class maps. `capabilities.ts` exposes them to both runtimes, the contract validator checks them, and the WordPress plugin reads the same file to expand registered block attributes:
 
 - `align` adds the alignment attribute, toolbar control, and alignment class mapping.
 - `spacing` adds the spacing attributes, inspector controls, and spacing classes.
 
-Use capabilities instead of copying common attributes or controls into individual blocks. Both runtimes use the same capability normalization and class helpers.
+Use capabilities instead of copying common attributes or controls into individual blocks. To add or change a capability, edit `capabilities.json` only; never redeclare its data in TypeScript or PHP.
 
 ### Controls
 
@@ -101,3 +103,7 @@ Agents and contributors must follow this sequence:
 5. **Verify:** open `/dev/blocks`, inspect the example through the real renderer, and take a gallery screenshot for visual review.
 
 The gallery is the required feedback loop, not a separate fixture system. Keep `example.attributes` realistic, use `example.innerBlocks` to exercise container anatomy, and update the fixture whenever the contract changes.
+
+### Benchmark page
+
+`pnpm benchmark:sync` (from `packages/ui`) serializes every block's example fixture into Gutenberg markup and upserts the WordPress benchmark page. The page is a derived artifact — the WordPress twin of `/dev/blocks` — used to verify end-to-end parity: WordPress parsing, GraphQL, the frontend renderer, and the Gutenberg canvas all render the same fixture tree. Never edit the page in the editor; change the `example` in `block.json` and re-sync.

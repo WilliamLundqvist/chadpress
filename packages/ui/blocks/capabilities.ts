@@ -12,6 +12,7 @@ export type BlockAttributeSpec = {
   type: string
   default?: unknown
   richText?: boolean
+  media?: boolean
   tagName?: string
   placeholder?: string
 }

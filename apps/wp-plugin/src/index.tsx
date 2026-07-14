@@ -6,6 +6,9 @@ import {
   HeadingLevelDropdown,
   InnerBlocks,
   InspectorControls,
+  MediaPlaceholder,
+  MediaUpload,
+  MediaUploadCheck,
   RichText,
   URLInput,
   store as blockEditorStore,
@@ -27,6 +30,7 @@ import {
   ToolbarGroup,
 } from "@wordpress/components";
 import { useDispatch, useSelect } from "@wordpress/data";
+import { uploadMedia } from "@wordpress/media-utils";
 
 import {
   applyAttributeDefaults,
@@ -103,6 +107,116 @@ const richTextFormatMap = {
 const InnerBlocksContent = (
   InnerBlocks as typeof InnerBlocks & { Content: ComponentType }
 ).Content;
+
+type WPMediaSize = {
+  url?: string;
+  width?: number;
+  height?: number;
+};
+
+type WPMedia = {
+  id?: number;
+  url?: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  sizes?: Record<string, WPMediaSize>;
+};
+
+type WPMediaAttachment = {
+  fetch: () => Promise<void>;
+  get: (key: string) => unknown;
+};
+
+declare global {
+  interface Window {
+    wp?: {
+      media?: {
+        attachment: (id: number) => WPMediaAttachment;
+      };
+    };
+  }
+}
+
+const DEFAULT_MEDIA_SIZE_SLUG = "large";
+
+const MEDIA_RESET_ATTRIBUTES = {
+  id: 0,
+  url: "",
+  alt: "",
+  mediaWidth: 0,
+  mediaHeight: 0,
+  sizeSlug: DEFAULT_MEDIA_SIZE_SLUG,
+} as const;
+
+function getMediaAttributeName(
+  meta: EffectiveBlockMeta,
+): string | undefined {
+  return Object.entries(meta.attributes).find(
+    ([, attribute]) => attribute.media === true,
+  )?.[0];
+}
+
+function hasSelectedMedia(attributes: Attributes): boolean {
+  const url = String(attributes.url ?? "").trim();
+  const id = Number(attributes.id ?? 0);
+  return url.length > 0 || id > 0;
+}
+
+function resolveMediaUrl(
+  media: WPMedia,
+  sizeSlug: string,
+): { url: string; mediaWidth: number; mediaHeight: number } {
+  const size = media.sizes?.[sizeSlug];
+  return {
+    url: size?.url ?? media.url ?? "",
+    mediaWidth: size?.width ?? media.width ?? 0,
+    mediaHeight: size?.height ?? media.height ?? 0,
+  };
+}
+
+function mediaSelectionToAttributes(
+  media: WPMedia,
+  sizeSlug: string,
+): Attributes {
+  const resolved = resolveMediaUrl(media, sizeSlug);
+  return {
+    id: media.id ?? 0,
+    url: resolved.url,
+    alt: media.alt ?? "",
+    mediaWidth: resolved.mediaWidth,
+    mediaHeight: resolved.mediaHeight,
+    sizeSlug,
+  };
+}
+
+async function resolveAttachmentSizeUrl(
+  attachmentId: number,
+  sizeSlug: string,
+): Promise<{ url: string; mediaWidth: number; mediaHeight: number } | null> {
+  const attachmentFactory = window.wp?.media?.attachment;
+  if (!attachmentFactory) {
+    return null;
+  }
+
+  const attachment = attachmentFactory(attachmentId);
+  await attachment.fetch();
+  const sizes = attachment.get("sizes") as Record<string, WPMediaSize> | undefined;
+  const size = sizes?.[sizeSlug];
+  const url =
+    size?.url ??
+    (attachment.get("url") as string | undefined) ??
+    "";
+  if (!url) {
+    return null;
+  }
+
+  return {
+    url,
+    mediaWidth: size?.width ?? Number(attachment.get("width") ?? 0),
+    mediaHeight: size?.height ?? Number(attachment.get("height") ?? 0),
+  };
+}
 
 function normalizeMeta(meta: CustomBlockMeta): EffectiveBlockMeta {
   return expandBlockCapabilities(meta) as EffectiveBlockMeta;
@@ -314,9 +428,7 @@ function getWordPressSupports(meta: EffectiveBlockMeta) {
     : undefined;
   const effectiveSupports = { ...supports, ...splitting };
 
-  return Object.keys(effectiveSupports).length > 0
-    ? effectiveSupports
-    : undefined;
+  return Object.keys(effectiveSupports).length > 0 ? effectiveSupports : {};
 }
 
 function getInnerBlocksConfig(meta: EffectiveBlockMeta) {
@@ -330,6 +442,88 @@ function getInnerBlocksConfig(meta: EffectiveBlockMeta) {
     allowedBlocks: allowedBlocks?.length ? allowedBlocks : undefined,
     template,
   };
+}
+
+function MediaBlockPlaceholder({
+  meta,
+  attributes,
+  setAttributes,
+}: {
+  meta: EffectiveBlockMeta;
+  attributes: Attributes;
+  setAttributes: (next: Partial<Attributes>) => void;
+}) {
+  const sizeSlug = String(attributes.sizeSlug ?? DEFAULT_MEDIA_SIZE_SLUG);
+
+  const applySelection = (media: WPMedia) => {
+    setAttributes(mediaSelectionToAttributes(media, sizeSlug));
+  };
+
+  return (
+    <MediaUploadCheck>
+      <MediaPlaceholder
+        icon="format-image"
+        labels={{
+          title: meta.title,
+          instructions: "Upload an image or choose one from the media library.",
+        }}
+        accept="image/*"
+        allowedTypes={["image"]}
+        onSelect={(media) => applySelection(media as WPMedia)}
+        onUpload={(files) => {
+          if (!files?.length) {
+            return;
+          }
+          uploadMedia({
+            filesList: files,
+            onFileChange: ([media]) => {
+              if (media) {
+                applySelection(media as WPMedia);
+              }
+            },
+          });
+        }}
+      />
+    </MediaUploadCheck>
+  );
+}
+
+function MediaBlockToolbar({
+  meta,
+  attributes,
+  setAttributes,
+}: {
+  meta: EffectiveBlockMeta;
+  attributes: Attributes;
+  setAttributes: (next: Partial<Attributes>) => void;
+}) {
+  const sizeSlug = String(attributes.sizeSlug ?? DEFAULT_MEDIA_SIZE_SLUG);
+
+  const applySelection = (media: WPMedia) => {
+    setAttributes(mediaSelectionToAttributes(media, sizeSlug));
+  };
+
+  return (
+    <BlockControls group="other">
+      <ToolbarGroup>
+        <MediaUploadCheck>
+          <MediaUpload
+            allowedTypes={["image"]}
+            value={Number(attributes.id ?? 0) || undefined}
+            onSelect={(media) => applySelection(media as WPMedia)}
+            render={({ open }) => (
+              <ToolbarButton icon="edit" label="Replace image" onClick={open} />
+            )}
+          />
+        </MediaUploadCheck>
+        <ToolbarButton
+          icon="no-alt"
+          label="Remove image"
+          onClick={() => setAttributes({ ...MEDIA_RESET_ATTRIBUTES })}
+        />
+      </ToolbarGroup>
+    </BlockControls>
+  );
 }
 
 function GenericBlockEdit({
@@ -455,11 +649,14 @@ function registerCustomBlock(definition: CustomBlockDefinition) {
         )}`,
       };
     },
-    edit({ attributes, clientId, setAttributes }) {
-      const normalized = normalizeAttributes(
-        meta,
-        attributes as Attributes,
-      );
+    edit(props) {
+      const { attributes, clientId, setAttributes } = props as {
+        attributes: Attributes;
+        clientId: string;
+        setAttributes: (attrs: Attributes) => void;
+      };
+
+      const normalized = normalizeAttributes(meta, attributes);
       const blockProps = useBlockProps();
       const editorActions = useDispatch(
         blockEditorStore,
@@ -477,11 +674,43 @@ function registerCustomBlock(definition: CustomBlockDefinition) {
         [clientId],
       );
       const setAttribute: SetAttribute = (name, value) => {
-        setAttributes({ [name]: value });
+        if (name === "sizeSlug") {
+          const attachmentId = Number(normalized.id ?? 0);
+          const nextSizeSlug = String(value);
+          if (attachmentId > 0) {
+            void resolveAttachmentSizeUrl(attachmentId, nextSizeSlug).then(
+              (resolved) => {
+                if (resolved) {
+                  setAttributes({
+                    sizeSlug: nextSizeSlug,
+                    url: resolved.url,
+                    mediaWidth: resolved.mediaWidth,
+                    mediaHeight: resolved.mediaHeight,
+                  } as Attributes);
+                  return;
+                }
+                setAttributes({ sizeSlug: nextSizeSlug } as Attributes);
+              },
+            );
+            return;
+          }
+        }
+        setAttributes({ [name]: value } as Attributes);
       };
+      const mediaAttributeName = getMediaAttributeName(meta);
+      const isMediaBlock = mediaAttributeName !== undefined;
+      const showMediaPlaceholder =
+        isMediaBlock && !hasSelectedMedia(normalized);
 
       return (
         <>
+          {isMediaBlock && hasSelectedMedia(normalized) ? (
+            <MediaBlockToolbar
+              meta={meta}
+              attributes={normalized}
+              setAttributes={setAttributes}
+            />
+          ) : null}
           {toolbarControls.length > 0 && (
             <BlockControls>
               <ToolbarGroup>
@@ -513,30 +742,55 @@ function registerCustomBlock(definition: CustomBlockDefinition) {
             </InspectorControls>
           )}
           <div {...blockProps}>
-            <GenericBlockEdit
-              definition={definition}
-              meta={meta}
-              attributes={normalized}
-              clientId={clientId}
-              adjacentClientIds={adjacentClientIds}
-              editorActions={editorActions}
-              setAttribute={setAttribute}
-            />
+            {showMediaPlaceholder ? (
+              <MediaBlockPlaceholder
+                meta={meta}
+                attributes={normalized}
+                setAttributes={setAttributes}
+              />
+            ) : (
+              <GenericBlockEdit
+                definition={definition}
+                meta={meta}
+                attributes={normalized}
+                clientId={clientId}
+                adjacentClientIds={adjacentClientIds}
+                editorActions={editorActions}
+                setAttribute={setAttribute}
+              />
+            )}
           </div>
         </>
       );
     },
     save() {
+      // Persist children as nested block comments only. No wrapper HTML is
+      // stored; both runtimes rebuild the DOM from the shared component.
       if (meta.supports?.innerBlocks) {
-        return (
-          <div {...useBlockProps.save()}>
-            <InnerBlocksContent />
-          </div>
-        );
+        return <InnerBlocksContent />;
       }
 
       return null;
     },
+    // Migrates content saved by the earlier generator, which wrapped inner
+    // blocks in a `wp-block-*` div.
+    deprecated: [
+      {
+        attributes: meta.attributes as never,
+        supports: getWordPressSupports(meta) as never,
+        save() {
+          if (meta.supports?.innerBlocks) {
+            return (
+              <div {...useBlockProps.save()}>
+                <InnerBlocksContent />
+              </div>
+            );
+          }
+
+          return null;
+        },
+      },
+    ] as never,
   });
 }
 

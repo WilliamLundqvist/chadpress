@@ -25,6 +25,12 @@ declare module "@wordpress/block-editor" {
     template?: unknown[]
   }>
 
+  export const MediaPlaceholder: React.ComponentType<Record<string, unknown>>
+  export const MediaUpload: React.ComponentType<Record<string, unknown>>
+  export const MediaUploadCheck: React.ComponentType<{
+    children?: React.ReactNode
+  }>
+
   export const RichText: React.ComponentType<{
     tagName: string
     value: string

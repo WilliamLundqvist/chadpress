@@ -196,6 +196,15 @@ for (const folderName of folders) {
     }
   }
 
+  const mediaAttributes = Object.entries(block.attributes ?? {}).filter(
+    ([, attribute]) => attribute?.media === true,
+  )
+  if (mediaAttributes.length > 1) {
+    report(
+      `${folderName} declares ${mediaAttributes.length} media attributes; at most one attribute may set "media": true`,
+    )
+  }
+
   if (!block.example || typeof block.example.attributes !== "object") {
     report(`${folderName} must provide example.attributes`)
   } else {

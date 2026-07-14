@@ -44,6 +44,7 @@
           },
           "default": {},
           "richText": { "type": "boolean" },
+          "media": { "type": "boolean" },
           "tagName": { "type": "string", "minLength": 1 },
           "placeholder": { "type": "string" }
         },

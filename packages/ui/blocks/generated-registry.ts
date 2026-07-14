@@ -8,6 +8,7 @@ import { blockDefinition as block_card_titleDefinition } from "./card-title"
 import { blockDefinition as block_columnDefinition } from "./column"
 import { blockDefinition as block_columnsDefinition } from "./columns"
 import { blockDefinition as block_headingDefinition } from "./heading"
+import { blockDefinition as block_imageDefinition } from "./image"
 import { blockDefinition as block_quoteDefinition } from "./quote"
 import { blockDefinition as block_sectionDefinition } from "./section"
 import { blockDefinition as block_textDefinition } from "./text"
@@ -23,6 +24,7 @@ export const blockRegistry = {
   "chadpress/column": block_columnDefinition,
   "chadpress/columns": block_columnsDefinition,
   "chadpress/heading": block_headingDefinition,
+  "chadpress/image": block_imageDefinition,
   "chadpress/quote": block_quoteDefinition,
   "chadpress/section": block_sectionDefinition,
   "chadpress/text": block_textDefinition,
