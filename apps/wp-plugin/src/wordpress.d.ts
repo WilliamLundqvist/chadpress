@@ -25,6 +25,11 @@ declare module "@wordpress/block-editor" {
     template?: unknown[]
   }>
 
+  export function useInnerBlocksProps(
+    props?: Record<string, unknown>,
+    options?: Record<string, unknown>,
+  ): Record<string, unknown> & { children?: React.ReactNode }
+
   export const MediaPlaceholder: React.ComponentType<Record<string, unknown>>
   export const MediaUpload: React.ComponentType<Record<string, unknown>>
   export const MediaUploadCheck: React.ComponentType<{
@@ -37,6 +42,7 @@ declare module "@wordpress/block-editor" {
     allowedFormats?: string[]
     placeholder?: string
     className?: string
+    ref?: React.Ref<HTMLElement>
     onChange: (value: string) => void
     onSplit?: (value: string, isOriginal: boolean) => unknown
     onMerge?: (forward: boolean) => void

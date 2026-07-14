@@ -215,6 +215,21 @@ for (const folderName of folders) {
     }
     validateExampleChildren(block, block.example.innerBlocks, `${folderName} example`)
   }
+
+  if (Array.isArray(block.parent)) {
+    for (const parentName of block.parent) {
+      if (!blocksByName.has(parentName)) {
+        report(`${folderName} parent references unknown block "${parentName}"`)
+      }
+    }
+  }
+
+  if (block.customEditor?.strategy === "list-item" && block.name !== "chadpress/list-item") {
+    report(`${folderName} uses list-item strategy but is not chadpress/list-item`)
+  }
+  if (block.customEditor?.strategy === "list-container" && block.name !== "chadpress/list") {
+    report(`${folderName} uses list-container strategy but is not chadpress/list`)
+  }
 }
 
 if (errors.length > 0) {

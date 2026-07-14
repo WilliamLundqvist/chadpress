@@ -1,0 +1,47 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/list-item",
+  "title": "List Item",
+  "category": "chadpress",
+  "icon": "editor-ul",
+  "description": "A single item within a Chadpress list.",
+  "textdomain": "chadpress",
+  "parent": ["chadpress/list"],
+  "attributes": {
+    "content": {
+      "type": "string",
+      "default": "",
+      "richText": true,
+      "tagName": "div",
+      "placeholder": "List item…"
+    }
+  },
+  "supports": {
+    "innerBlocks": true,
+    "allowedBlocks": ["chadpress/list"],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom",
+    "strategy": "list-item",
+    "allowedRichText": ["bold", "italic", "link"],
+    "splitting": true
+  },
+  "example": {
+    "attributes": {
+      "content": "List item"
+    }
+  },
+  "variations": []
+}

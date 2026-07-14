@@ -1,0 +1,78 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/list",
+  "title": "List",
+  "category": "chadpress",
+  "icon": "editor-ul",
+  "description": "An ordered or unordered list of items.",
+  "textdomain": "chadpress",
+  "attributes": {
+    "ordered": { "type": "boolean", "default": false }
+  },
+  "supports": {
+    "innerBlocks": true,
+    "allowedBlocks": ["chadpress/list-item"],
+    "template": [
+      ["chadpress/list-item", { "content": "First item" }],
+      ["chadpress/list-item", { "content": "Second item" }]
+    ],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": [
+      {
+        "type": "toggle",
+        "bind": "ordered",
+        "label": "Ordered list"
+      }
+    ]
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom",
+    "strategy": "list-container"
+  },
+  "example": {
+    "attributes": {
+      "ordered": false
+    },
+    "innerBlocks": [
+      {
+        "name": "chadpress/list-item",
+        "attributes": { "content": "Shared block contracts across Gutenberg and Next.js" },
+        "innerBlocks": []
+      },
+      {
+        "name": "chadpress/list-item",
+        "attributes": { "content": "Nested lists for structured content" },
+        "innerBlocks": [
+          {
+            "name": "chadpress/list",
+            "attributes": { "ordered": false },
+            "innerBlocks": [
+              {
+                "name": "chadpress/list-item",
+                "attributes": { "content": "Nested item one" }
+              },
+              {
+                "name": "chadpress/list-item",
+                "attributes": { "content": "Nested item two" }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chadpress/list-item",
+        "attributes": { "content": "Real semantic HTML on the frontend" }
+      }
+    ]
+  },
+  "variations": []
+}

@@ -17,7 +17,8 @@
       "chadpress/button",
       "chadpress/image",
       "chadpress/section",
-      "chadpress/columns"
+      "chadpress/columns",
+      "chadpress/list"
     ],
     "template": [],
     "html": false

@@ -42,6 +42,8 @@ import {
   type BlockMeta,
 } from "@repo/ui/blocks";
 
+import { ListContainerEdit, ListItemEdit } from "./editors/list";
+
 type AttributeValue = unknown;
 type Attributes = Record<string, unknown>;
 type SetAttribute = (name: string, value: AttributeValue) => void;
@@ -56,9 +58,11 @@ type CustomBlockMeta = BlockMeta & {
   };
   customEditor?: {
     source: string;
+    strategy?: "list-container" | "list-item";
     allowedRichText?: readonly string[];
     splitting?: boolean;
   };
+  parent?: readonly string[];
 };
 
 type EffectiveBlockMeta = Omit<
@@ -624,15 +628,40 @@ function GenericBlockEdit({
   );
 }
 
+function ListItemBlockEdit({
+  attributes,
+  setAttributes,
+  clientId,
+}: {
+  attributes: Attributes;
+  setAttributes: (attrs: Attributes) => void;
+  clientId: string;
+}) {
+  const editorActions = useDispatch(
+    blockEditorStore,
+  ) as unknown as BlockEditorActions;
+
+  return (
+    <ListItemEdit
+      attributes={attributes}
+      setAttributes={setAttributes}
+      clientId={clientId}
+      mergeBlocks={editorActions.mergeBlocks}
+    />
+  );
+}
+
 function registerCustomBlock(definition: CustomBlockDefinition) {
   const meta = normalizeMeta(definition.meta);
+  const strategy = meta.customEditor?.strategy;
   const inspectorControls = meta.customControls.inspector;
   const toolbarControls = meta.customControls.toolbar;
-  const { supports: ignoredSupports, ...blockSettings } = meta;
+  const { supports: ignoredSupports, parent, ...blockSettings } = meta;
   void ignoredSupports;
 
   registerBlockType(meta.name, {
     ...blockSettings,
+    ...(parent?.length ? { parent: [...parent] } : {}),
     supports: getWordPressSupports(meta),
     icon: meta.icon as never,
     merge(attributes, attributesToMerge) {
@@ -655,6 +684,26 @@ function registerCustomBlock(definition: CustomBlockDefinition) {
         clientId: string;
         setAttributes: (attrs: Attributes) => void;
       };
+
+      if (strategy === "list-container") {
+        return (
+          <ListContainerEdit
+            attributes={attributes}
+            setAttributes={setAttributes}
+            clientId={clientId}
+          />
+        );
+      }
+
+      if (strategy === "list-item") {
+        return (
+          <ListItemBlockEdit
+            attributes={attributes}
+            setAttributes={setAttributes}
+            clientId={clientId}
+          />
+        );
+      }
 
       const normalized = normalizeAttributes(meta, attributes);
       const blockProps = useBlockProps();

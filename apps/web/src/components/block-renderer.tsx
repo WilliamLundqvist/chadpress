@@ -5,6 +5,10 @@ import {
   getBlockDefinition,
   isBlockName,
   isLayoutContainerBlock,
+  isDirectChildOfSemanticList,
+  isSemanticListContainerBlock,
+  isSemanticListItemBlock,
+  SEMANTIC_LIST_ITEM_BLOCK,
 } from "@repo/ui/blocks";
 import {
   normalizeEditorBlock,
@@ -69,6 +73,12 @@ function BlockNode({
     Record<string, unknown> & { className?: string; children?: ReactNode }
   >;
   const supportsInnerBlocks = Boolean(def.meta.supports?.innerBlocks);
+  const isListItem = isSemanticListItemBlock(block.name);
+  const isList = isSemanticListContainerBlock(block.name);
+  const parentIsList = isDirectChildOfSemanticList(parentName);
+  const parentIsListItem = parentName === SEMANTIC_LIST_ITEM_BLOCK;
+  const skipSemanticWrapper =
+    isListItem || parentIsList || (isList && parentIsListItem);
   const isChildOfLayout =
     parentName !== undefined && isLayoutContainerBlock(parentName);
   const innerUseContents =
@@ -78,37 +88,49 @@ function BlockNode({
     raw,
   );
 
+  const renderChild = (child: WpEditorBlock) => (
+    <BlockNode key={child.clientId} block={child} parentName={block.name} />
+  );
+
   const innerBlocks =
-    block.innerBlocks && block.innerBlocks.length > 0 ? (
-      <div
-        className={innerUseContents ? "contents" : "chadpress-inner"}
-      >
-        {block.innerBlocks.map((child) => (
-          <BlockNode
-            key={child.clientId}
-            block={child}
-            parentName={block.name}
-          />
-        ))}
-      </div>
-    ) : null;
+    block.innerBlocks && block.innerBlocks.length > 0
+      ? parentIsList || isListItem
+        ? block.innerBlocks.map(renderChild)
+        : (
+            <div
+              className={innerUseContents ? "contents" : "chadpress-inner"}
+            >
+              {block.innerBlocks.map(renderChild)}
+            </div>
+          )
+      : null;
+
+  const blockContent = (
+    <Comp
+      {...(raw as Record<string, unknown>)}
+      className={capabilityClassName}
+    >
+      {isListItem
+        ? innerBlocks
+        : supportsInnerBlocks
+          ? innerBlocks
+          : null}
+    </Comp>
+  );
+
+  if (skipSemanticWrapper) {
+    return blockContent;
+  }
 
   return (
     <div
       className={
-        isChildOfLayout
-          ? "chadpress-block contents"
-          : "chadpress-block"
+        isChildOfLayout ? "chadpress-block contents" : "chadpress-block"
       }
       data-wp-block={block.name}
     >
-      <Comp
-        {...(raw as Record<string, unknown>)}
-        className={capabilityClassName}
-      >
-        {supportsInnerBlocks ? innerBlocks : null}
-      </Comp>
-      {!supportsInnerBlocks && innerBlocks}
+      {blockContent}
+      {!supportsInnerBlocks && !isList && innerBlocks}
     </div>
   );
 }

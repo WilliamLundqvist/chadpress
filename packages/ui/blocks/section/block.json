@@ -25,7 +25,8 @@
       "chadpress/image",
       "chadpress/section",
       "chadpress/columns",
-      "chadpress/card"
+      "chadpress/card",
+      "chadpress/list"
     ],
     "template": [],
     "html": false

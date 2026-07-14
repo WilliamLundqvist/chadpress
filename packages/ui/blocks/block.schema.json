@@ -24,6 +24,14 @@
     "category": { "type": "string" },
     "icon": { "type": "string" },
     "description": { "type": "string" },
+    "parent": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^chadpress/"
+      },
+      "uniqueItems": true
+    },
     "textdomain": { "type": "string" },
     "attributes": {
       "type": "object",
@@ -119,6 +127,10 @@
         "source": {
           "type": "string",
           "const": "custom"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": ["list-container", "list-item"]
         },
         "allowedRichText": {
           "type": "array",
