@@ -11,6 +11,8 @@
     "supports",
     "customTailwind",
     "customControls",
+    "capabilities",
+    "example",
     "variations"
   ],
   "additionalProperties": true,
@@ -41,8 +43,21 @@
             ]
           },
           "default": {},
-          "richText": { "type": "boolean" }
+          "richText": { "type": "boolean" },
+          "tagName": { "type": "string", "minLength": 1 },
+          "placeholder": { "type": "string" }
         },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "richText": { "const": true } },
+              "required": ["richText"]
+            },
+            "then": {
+              "required": ["tagName", "placeholder"]
+            }
+          }
+        ],
         "additionalProperties": true
       }
     },
@@ -91,24 +106,18 @@
       },
       "additionalProperties": true
     },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
     "customEditor": {
       "type": "object",
-      "required": ["source", "allowedRichText", "disabledSupports"],
+      "required": ["source"],
       "properties": {
         "source": {
           "type": "string",
-          "enum": ["core", "custom"]
-        },
-        "editable": {
-          "type": "object",
-          "required": ["attribute", "tagName", "placeholder"],
-          "properties": {
-            "attribute": { "type": "string" },
-            "tagName": { "type": "string" },
-            "placeholder": { "type": "string" },
-            "className": { "type": "string" }
-          },
-          "additionalProperties": false
+          "const": "custom"
         },
         "allowedRichText": {
           "type": "array",
@@ -118,31 +127,49 @@
           },
           "uniqueItems": true
         },
-        "disabledSupports": {
+        "splitting": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "example": {
+      "type": "object",
+      "required": ["attributes"],
+      "properties": {
+        "attributes": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "innerBlocks": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "color",
-              "backgroundColor",
-              "fontSize",
-              "__experimentalFontWeight",
-              "__experimentalFontStyle",
-              "__experimentalTextTransform",
-              "__experimentalTextDecoration",
-              "__experimentalLetterSpacing"
-            ]
-          },
-          "uniqueItems": true
+          "items": { "$ref": "#/definitions/exampleBlock" }
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "variations": {
       "type": "array"
     }
   },
   "definitions": {
+    "exampleBlock": {
+      "type": "object",
+      "required": ["name", "attributes"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^chadpress/"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "innerBlocks": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/exampleBlock" }
+        }
+      },
+      "additionalProperties": false
+    },
     "customControl": {
       "type": "object",
       "required": ["type", "bind", "label"],
@@ -150,13 +177,12 @@
         "type": {
           "type": "string",
           "enum": [
-            "alignment",
-            "headingLevel",
-            "link",
             "select",
             "toggle",
             "text",
-            "color"
+            "alignment",
+            "headingLevel",
+            "link"
           ]
         },
         "bind": { "type": "string" },

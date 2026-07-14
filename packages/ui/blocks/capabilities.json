@@ -1,0 +1,42 @@
+{
+  "align": {
+    "attributes": {
+      "align": { "type": "string", "default": "left" }
+    },
+    "controls": {
+      "toolbar": [
+        { "type": "alignment", "bind": "align", "label": "Alignment" }
+      ]
+    },
+    "classMap": {
+      "align": {
+        "left": "text-left",
+        "center": "text-center",
+        "right": "text-right"
+      }
+    }
+  },
+  "spacing": {
+    "attributes": {
+      "padding": { "type": "string", "default": "none" }
+    },
+    "controls": {
+      "inspector": [
+        {
+          "type": "select",
+          "bind": "padding",
+          "label": "Padding",
+          "options": ["none", "sm", "md", "lg"]
+        }
+      ]
+    },
+    "classMap": {
+      "padding": {
+        "none": "",
+        "sm": "p-2",
+        "md": "p-4",
+        "lg": "p-6"
+      }
+    }
+  }
+}

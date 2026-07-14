@@ -1,17 +1,22 @@
 {
   "$schema": "../block.schema.json",
   "apiVersion": 3,
-  "name": "core/heading",
+  "name": "chadpress/heading",
   "title": "Heading",
-  "category": "text",
+  "category": "chadpress",
   "icon": "heading",
-  "description": "Shadow declaration for WordPress core/heading — maps attribute values to shadcn typography variants.",
+  "description": "A Chadpress heading with semantic level and alignment controls.",
   "textdomain": "chadpress",
 
   "attributes": {
-    "content": { "type": "string", "default": "", "richText": true },
-    "level": { "type": "number", "default": 2 },
-    "textAlign": { "type": "string", "default": "left" }
+    "content": {
+      "type": "string",
+      "default": "",
+      "richText": true,
+      "tagName": "span",
+      "placeholder": "Write heading…"
+    },
+    "level": { "type": "number", "default": 2 }
   },
 
   "supports": {
@@ -29,34 +34,36 @@
         "4": "h4",
         "5": "h5",
         "6": "h6"
-      },
-      "textAlign": {
-        "left": "start",
-        "center": "center",
-        "right": "end"
       }
     },
     "className": ""
   },
 
   "customControls": {
-    "toolbar": [],
+    "toolbar": [
+      {
+        "type": "headingLevel",
+        "bind": "level",
+        "label": "Heading level",
+        "options": [1, 2, 3, 4, 5, 6]
+      }
+    ],
     "inspector": []
   },
 
+  "capabilities": ["align"],
+
   "customEditor": {
-    "source": "core",
-    "allowedRichText": ["bold", "italic", "link"],
-    "disabledSupports": [
-      "color",
-      "backgroundColor",
-      "fontSize",
-      "__experimentalFontWeight",
-      "__experimentalFontStyle",
-      "__experimentalTextTransform",
-      "__experimentalTextDecoration",
-      "__experimentalLetterSpacing"
-    ]
+    "source": "custom",
+    "allowedRichText": ["bold", "italic", "link"]
+  },
+
+  "example": {
+    "attributes": {
+      "content": "Heading",
+      "level": 2,
+      "align": "left"
+    }
   },
 
   "variations": []

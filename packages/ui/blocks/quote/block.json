@@ -1,0 +1,52 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/quote",
+  "title": "Quote",
+  "category": "chadpress",
+  "icon": "format-quote",
+  "description": "A quotation with an independently editable citation.",
+  "textdomain": "chadpress",
+  "attributes": {
+    "quote": {
+      "type": "string",
+      "default": "",
+      "richText": true,
+      "tagName": "span",
+      "placeholder": "Add quote…"
+    },
+    "citation": {
+      "type": "string",
+      "default": "",
+      "richText": true,
+      "tagName": "span",
+      "placeholder": "Add citation…"
+    }
+  },
+  "supports": {
+    "innerBlocks": false,
+    "allowedBlocks": [],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom",
+    "allowedRichText": ["bold", "italic", "link"]
+  },
+  "example": {
+    "attributes": {
+      "quote": "The quotation.",
+      "citation": "The source"
+    }
+  },
+  "variations": []
+}

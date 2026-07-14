@@ -1,32 +1,42 @@
-# Chadpress — Cursor / agent context
+# Chadpress agent rules
 
-## What this repo is
+Chadpress is a Next.js + WordPress monorepo. WordPress supplies content through WPGraphQL Content Blocks; `packages/ui` supplies the block contracts and pure React renderers shared by Gutenberg and the frontend.
 
-Monorepo: **Next.js** (`apps/web`) renders WordPress content via **WPGraphQL** + **WPGraphQL Content Blocks**. **@repo/ui** (`packages/ui`) holds shadcn components and **block declarations** (`packages/ui/blocks/*/block.json`). The **Chadpress** WordPress plugin (`apps/wp-plugin`) injects shared editor CSS and registers custom `chadpress/*` blocks from those JSON files.
-
-WordPress/DDEV is usually **outside** this tree; bind-mount the plugin and `packages/ui` into the container — see `apps/wp-plugin/README.md`.
-
-## Stack
-
-- pnpm workspaces + Turborepo
-- Next.js App Router, Tailwind, shadcn (`packages/ui`)
-- WordPress + Gutenberg; WPGraphQL + WPGraphQL Content Blocks
+Before changing blocks, read `packages/ui/blocks/README.md`.
 
 ## Non-negotiables
 
-1. **`block.json` is the contract** for each block (attributes, supports, `customTailwind`, `customControls`, `customEditor`). Do not add parallel hand-written attribute types in `apps/web`; use registry meta + `applyAttributeDefaults` / `InferAttributes`.
-2. **`packages/ui` stays framework-agnostic** — no WordPress or Next imports inside block components or shared UI.
-3. **`apps/web` is a renderer** — GraphQL in, `BlockRenderer` + `blockRegistry` out. Routing maps URLs to WordPress URIs (`/` → `/`, nested slugs → trailing-slash URI conventions per `wp-block-query`).
+1. Author only custom `chadpress/*` blocks. Never add `core/*` shadow declarations or depend on Core Group, Columns, or other Core blocks. Custom layout blocks are the intended architecture.
+2. Treat each `block.json` as the complete contract: attributes, supports, capabilities, semantic styles, controls, custom-editor policy, variations, and `example.attributes`.
+3. Render the same framework-agnostic React component in WordPress and Next.js. No WordPress or Next.js imports in `packages/ui` block components.
+4. Declare every editable string per attribute with `richText: true`, `tagName`, and `placeholder`. Components render the corresponding named slot in the editor and persisted HTML on the frontend. Support multiple slots.
+5. Reuse the closed `align` and `spacing` capabilities. Do not duplicate their attributes, controls, or class logic.
+6. Controls must use only the implemented closed vocabulary: `select`, `toggle`, `text`, `alignment`, `headingLevel`, and `link`. Every control binds a real explicit or capability-provided attribute and covers all supported options.
+7. Keep WordPress restricted to the declaration-derived `chadpress/*` allowlist. Do not weaken the allowlist to accommodate an undeclared block.
+8. Keep GraphQL flat: request `editorBlocks(flat: true)` with `clientId` / `parentClientId`, rebuild the tree in the web app, and render through `blockRegistry`. Do not add recursive depth fragments or `renderedHtml` fallbacks.
+9. Generated registry and barrel files come from the filesystem scan. Do not hand-edit them or maintain parallel block lists.
 
-## Phases (historical roadmap — all implemented)
+## Block workflow
 
-- **Phase 1:** Turborepo, `apps/web`, `apps/wp-plugin`, `packages/ui` with Tailwind/shadcn.
-- **Phase 2:** Declaration engine: `block.json` + schema, registry, typed attributes — see `packages/ui/blocks/README.md`.
-- **Phase 3:** WordPress bridge: plugin enqueues `editor.css`, core shadow blocks + custom `chadpress/*` registration, DDEV mounts.
-- **Phase 4:** Universal block renderer in Next (`WpContentPage`, `BlockRenderer`, `wp-block-query`).
+Use the canonical anatomy:
 
-For **new blocks or contract changes**, read **`packages/ui/blocks/README.md` first** and update that doc if the pattern genuinely changes. Do not bypass its rules silently.
+```text
+packages/ui/blocks/<slug>/
+  block.json
+  <Name>Block.tsx
+  <slug>-variants.ts   # optional
+  types.ts
+  index.ts
+```
 
-## Layout blocks
+From `packages/ui`, use:
 
-Use WordPress **core/group** (stack/row/grid) and **core/columns** / **core/column** with shadow declarations in `packages/ui/blocks/` — avoid ad-hoc layout-only Chadpress blocks unless documented in `blocks/README.md`.
+```sh
+node scripts/create-block.mjs <slug> "<Title>"
+pnpm generate:registry
+pnpm validate:contracts
+```
+
+For every new or changed block, follow: **contract → scaffold → implement → validate → `/dev/blocks` gallery screenshot**. Define representative `example.attributes`, add `example.innerBlocks` for containers, run generation and validation, then visually inspect the real renderer in the gallery. Do not bypass failures or create separate fixture data.
+
+Do not add configurable arbitrary Tailwind branches in components. Map contract values to semantic CVA variants or shared capability classes. Components own complete DOM anatomy, including rich-text slot placement and child content.

@@ -39,10 +39,12 @@ export type InferAttributes<
 }
 
 export interface BlockDefinition<Meta = unknown, Attrs = unknown> {
-  Component: ComponentType<Attrs & { className?: string; children?: ReactNode }>
+  Component: ComponentType<
+    Attrs & {
+      className?: string
+      children?: ReactNode
+      slots?: Record<string, ReactNode>
+    }
+  >
   meta: Meta
-  getEditableClassName?: (
-    attributes: Record<string, unknown>,
-    className?: string,
-  ) => string
 }

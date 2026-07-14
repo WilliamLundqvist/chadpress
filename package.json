@@ -6,7 +6,8 @@
     "build": "turbo run build",
     "build:css": "pnpm --filter @repo/ui build:css",
     "dev": "turbo run dev",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "validate": "turbo run validate"
   },
   "devDependencies": {
     "turbo": "latest"

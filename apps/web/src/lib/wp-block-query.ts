@@ -10,7 +10,7 @@ import {
 import { fetchWordPressGraphql } from "./wordpress";
 
 /**
- * `core/heading` → `CoreHeading` (matches WPGraphQL Content Blocks naming).
+ * `chadpress/heading` → `ChadpressHeading` (matches WPGraphQL Content Blocks naming).
  */
 export function blockNameToGraphqlTypeName(blockName: string): string {
   return blockName
@@ -41,28 +41,7 @@ function buildBlockInlineFragments(): string {
     .join("\n");
 }
 
-const coreBlockLine = `
-  __typename
-  name
-  renderedHtml
-`;
-
-/**
- * @param maxInnerDepth - how many nested `innerBlocks` levels to request (0 = no innerBlocks).
- */
-function buildEditorBlockNode(maxInnerDepth: number): string {
-  const frags = buildBlockInlineFragments();
-  if (maxInnerDepth <= 0) {
-    return `${coreBlockLine}
-    ${frags}`.trim();
-  }
-  return `${coreBlockLine}
-    ${frags}
-    innerBlocks { ${buildEditorBlockNode(maxInnerDepth - 1)} }`;
-}
-
-/** Deeper tree for Group → Columns → Column → content and similar. */
-const EDITOR_BLOCK_BODY = buildEditorBlockNode(4).trim();
+const BLOCK_ATTRIBUTE_FRAGMENTS = buildBlockInlineFragments();
 
 export const CONTENT_NODE_BY_URI = /* GraphQL */ `
   query ContentNodeByUri($uri: ID!) {
@@ -72,52 +51,69 @@ export const CONTENT_NODE_BY_URI = /* GraphQL */ `
       uri
       ... on Page {
         title
-        editorBlocks(flat: false) {
-          ${EDITOR_BLOCK_BODY}
+        editorBlocks(flat: true) {
+          ...EditorBlockFields
         }
       }
       ... on Post {
         title
-        editorBlocks(flat: false) {
-          ${EDITOR_BLOCK_BODY}
+        editorBlocks(flat: true) {
+          ...EditorBlockFields
         }
       }
     }
   }
-`.trim();
-
-export const LATEST_POST_WITH_BLOCKS = /* GraphQL */ `
-  query LatestPostBlocks {
-    posts(first: 1) {
-      nodes {
-        id
-        title
-        editorBlocks(flat: false) {
-          ${EDITOR_BLOCK_BODY}
-        }
-      }
-    }
+  fragment EditorBlockFields on EditorBlock {
+    __typename
+    name
+    clientId
+    parentClientId
+    ${BLOCK_ATTRIBUTE_FRAGMENTS}
   }
 `.trim();
 
-export type WpEditorBlock = {
+type FlatWpEditorBlock = {
   __typename: string;
   name: string;
-  renderedHtml?: string | null;
+  clientId: string;
+  parentClientId: string | null;
   /** Present when a typed fragment (e.g. `CoreHeading`) is resolved. */
   attributes?: Record<string, unknown> | null;
-  innerBlocks?: WpEditorBlock[] | null;
 };
 
-export type LatestPostBlocksData = {
-  posts: {
-    nodes: Array<{
-      id: string;
-      title: string | null;
-      editorBlocks: WpEditorBlock[] | null;
-    }> | null;
-  } | null;
+export type WpEditorBlock = FlatWpEditorBlock & {
+  innerBlocks: WpEditorBlock[];
 };
+
+export function rebuildEditorBlockTree(
+  blocks: FlatWpEditorBlock[] | null | undefined,
+): WpEditorBlock[] {
+  if (!blocks?.length) {
+    return [];
+  }
+
+  const rebuilt = blocks.map(
+    (block): WpEditorBlock => ({ ...block, innerBlocks: [] }),
+  );
+  const blocksByClientId = new Map(
+    rebuilt.map((block) => [block.clientId, block]),
+  );
+  const roots: WpEditorBlock[] = [];
+
+  for (const block of rebuilt) {
+    const parent = block.parentClientId
+      ? blocksByClientId.get(block.parentClientId)
+      : undefined;
+
+    if (parent && parent !== block) {
+      parent.innerBlocks.push(block);
+    } else {
+      roots.push(block);
+    }
+  }
+
+  return roots;
+}
 
 export type ContentNodeWithBlocks = {
   __typename: string;
@@ -129,6 +125,14 @@ export type ContentNodeWithBlocks = {
 
 export type ContentNodeByUriData = {
   contentNode: ContentNodeWithBlocks | null;
+};
+
+type FlatContentNodeByUriData = {
+  contentNode:
+    | (Omit<ContentNodeWithBlocks, "editorBlocks"> & {
+        editorBlocks?: FlatWpEditorBlock[] | null;
+      })
+    | null;
 };
 
 export function toWordPressUri(slug?: string[]): string {
@@ -160,12 +164,25 @@ export function normalizeEditorBlock(
   >;
 }
 
-export async function getLatestPostWithBlocks() {
-  return fetchWordPressGraphql<LatestPostBlocksData>(LATEST_POST_WITH_BLOCKS);
-}
+export async function getContentNodeByUri(
+  uri: string,
+): Promise<ContentNodeByUriData> {
+  const data = await fetchWordPressGraphql<FlatContentNodeByUriData>(
+    CONTENT_NODE_BY_URI,
+    {
+      uri,
+    },
+  );
 
-export async function getContentNodeByUri(uri: string) {
-  return fetchWordPressGraphql<ContentNodeByUriData>(CONTENT_NODE_BY_URI, {
-    uri,
-  });
+  if (!data.contentNode) {
+    return data as ContentNodeByUriData;
+  }
+
+  return {
+    ...data,
+    contentNode: {
+      ...data.contentNode,
+      editorBlocks: rebuildEditorBlockTree(data.contentNode.editorBlocks),
+    },
+  } satisfies ContentNodeByUriData;
 }

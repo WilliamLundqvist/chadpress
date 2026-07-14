@@ -18,9 +18,14 @@
     "dev": "pnpm run watch:css",
     "watch:css": "tailwindcss -i ./src/globals.css -o ./dist/editor.css --watch",
     "build:css": "tailwindcss -i ./src/globals.css -o ./dist/editor.css",
-    "dist": "pnpm build:css",
+    "build": "pnpm run validate:contracts && pnpm run build:css",
+    "dist": "pnpm run build",
+    "create:block": "node ./scripts/create-block.mjs",
     "generate:registry": "node ./scripts/generate-block-registry.mjs",
-    "validate:contracts": "node ./scripts/generate-block-registry.mjs && node ./scripts/validate-block-contracts.mjs && tsc --noEmit"
+    "test": "vitest run",
+    "validate": "pnpm run validate:contracts && pnpm run test",
+    "validate:contracts": "node ./scripts/validate-block-contracts.mjs && tsc --noEmit",
+    "benchmark:sync": "node ./scripts/generate-benchmark.mjs --apply"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -39,7 +44,9 @@
     "@tailwindcss/cli": "^4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "ajv": "^8.20.0",
     "tailwindcss": "^4",
-    "typescript": "latest"
+    "typescript": "latest",
+    "vitest": "^4.1.10"
   }
 }

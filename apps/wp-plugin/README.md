@@ -1,11 +1,11 @@
 # apps/wp-plugin — Chadpress WordPress plugin
 
-Injects **`@repo/ui`** editor styles into the Gutenberg iframe (`add_editor_style` → `chadpress-ui/dist/editor.css`) so core and custom blocks match Next.js typography/tokens.
+Injects **`@repo/ui`** editor styles into the Gutenberg iframe (`add_editor_style` → `chadpress-ui/dist/editor.css`) so Chadpress blocks use the same typography and tokens as Next.js.
 
 Also:
 
-- Reads mounted `packages/ui/blocks/*/block.json` and applies `customEditor.disabledSupports` to matching **core** blocks (declaration-driven).
-- Registers **`chadpress/*`** blocks that use `customEditor.source: "custom"` and enqueues the built editor script (`build/index.js`).
+- Registers **`chadpress/*`** declarations and enqueues the generated editor bundle (`build/index.js`).
+- Restricts Gutenberg's inserter to the discovered Chadpress block set. Core blocks are intentionally unsupported.
 
 Full-stack setup is summarized in the [monorepo README](../../README.md).
 
@@ -39,19 +39,9 @@ pnpm --filter @repo/ui build:css
 pnpm --filter wp-plugin build
 ```
 
-## Core block policy (`customEditor` on shadows)
+## All-custom block policy
 
-Example — `packages/ui/blocks/heading/block.json`:
-
-```json
-"customEditor": {
-  "source": "core",
-  "allowedRichText": ["bold", "italic", "link"],
-  "disabledSupports": ["color", "backgroundColor", "fontSize"]
-}
-```
-
-The plugin maps `disabledSupports` to WordPress block supports so the editor does not expose options the frontend contract does not implement.
+Every registered block uses the `chadpress/*` namespace and renders the same pure React component in Gutenberg and Next.js. The editor generator reads attributes, rich-text slots, controls, capabilities, InnerBlocks settings, and examples from each `block.json`. See [`packages/ui/blocks/README.md`](../../packages/ui/blocks/README.md).
 
 ## Plugins (one-time per environment)
 
@@ -68,7 +58,7 @@ Or install **WPGraphQL** (wordpress.org) and **WPGraphQL Content Blocks** ([rele
 1. `pnpm --filter @repo/ui build:css` (+ `pnpm --filter wp-plugin build` if you use custom blocks)
 2. `ddev restart` after mount changes
 3. Activate **Chadpress**, **WPGraphQL**, **WPGraphQL Content Blocks**
-4. Edit a post with a **Heading** (or your blocks) — preview should use shared styles
+4. Edit a post with a **Chadpress Heading** (or another Chadpress block) — preview should use the shared component and styles
 5. Optional GraphiQL query for `editorBlocks` / `attributes` — see older docs or WPGraphQL IDE
 
 If `editorBlocks` is missing, Content Blocks is inactive or the block type is unsupported.

@@ -126,6 +126,89 @@ function chadpress_block_declarations(): array
 }
 
 /**
+ * Capability attribute definitions read from packages/ui/blocks/capabilities.json,
+ * the single capability declaration shared with the TypeScript runtimes and the
+ * contract validator.
+ *
+ * WordPress and WPGraphQL Content Blocks only expose attributes declared on the
+ * registered block type, so capability attributes must be expanded here too.
+ *
+ * @return array<string,array<string,array<string,mixed>>>
+ */
+function chadpress_capability_attribute_definitions(): array
+{
+	static $definitions = null;
+
+	if (null !== $definitions) {
+		return $definitions;
+	}
+
+	$definitions = array();
+	$file        = CHADPRESS_UI_DIR . '/blocks/capabilities.json';
+
+	if (! is_readable($file)) {
+		return $definitions;
+	}
+
+	$json = json_decode((string) file_get_contents($file), true);
+	if (! is_array($json)) {
+		return $definitions;
+	}
+
+	foreach ($json as $name => $capability) {
+		if (is_array($capability['attributes'] ?? null)) {
+			$definitions[$name] = $capability['attributes'];
+		}
+	}
+
+	return $definitions;
+}
+
+/**
+ * Merge capability attributes into a block declaration.
+ *
+ * Explicit block.json attributes override capability defaults.
+ *
+ * @param array<string,mixed> $block Block declaration.
+ * @return array<string,array<string,mixed>>
+ */
+function chadpress_expand_block_capability_attributes(array $block): array
+{
+	$attributes    = is_array($block['attributes'] ?? null) ? $block['attributes'] : array();
+	$capabilities  = is_array($block['capabilities'] ?? null) ? $block['capabilities'] : array();
+	$definitions   = chadpress_capability_attribute_definitions();
+	$from_caps     = array();
+
+	foreach ($capabilities as $capability) {
+		if (! is_string($capability) || ! isset($definitions[$capability])) {
+			continue;
+		}
+		$from_caps = array_merge($from_caps, $definitions[$capability]);
+	}
+
+	return array_merge($from_caps, $attributes);
+}
+
+/**
+ * Expand capability attributes before WordPress registers block types.
+ *
+ * @param array<string,mixed> $metadata Block metadata from block.json.
+ * @return array<string,mixed>
+ */
+function chadpress_expand_block_type_metadata(array $metadata): array
+{
+	$name = $metadata['name'] ?? null;
+	if (! is_string($name) || 0 !== strpos($name, 'chadpress/')) {
+		return $metadata;
+	}
+
+	$metadata['attributes'] = chadpress_expand_block_capability_attributes($metadata);
+
+	return $metadata;
+}
+add_filter('block_type_metadata', 'chadpress_expand_block_type_metadata');
+
+/**
  * Determine whether a declaration should be registered by Chadpress.
  *
  * @param array<string,mixed> $block Block declaration.
@@ -136,6 +219,32 @@ function chadpress_is_custom_block_declaration(array $block): bool
 	$custom_editor = $block['customEditor'] ?? array();
 	return is_array($custom_editor) && 'custom' === ($custom_editor['source'] ?? null);
 }
+
+/**
+ * Limit the editor to Chadpress-native custom blocks discovered from declarations.
+ *
+ * @param bool|string[] $allowed_block_types Existing block type restriction.
+ * @param mixed         $block_editor_context Current block editor context.
+ * @return string[]
+ */
+function chadpress_allowed_block_types($allowed_block_types, $block_editor_context): array
+{
+	$allowed = array();
+
+	foreach (chadpress_block_declarations() as $name => $block) {
+		if (
+			is_string($name)
+			&& 0 === strpos($name, 'chadpress/')
+			&& is_array($block)
+			&& chadpress_is_custom_block_declaration($block)
+		) {
+			$allowed[] = $name;
+		}
+	}
+
+	return $allowed;
+}
+add_filter('allowed_block_types_all', 'chadpress_allowed_block_types', 10, 2);
 
 /**
  * Register the generated Gutenberg editor bundle for Chadpress custom blocks.
@@ -216,141 +325,42 @@ function chadpress_register_custom_blocks(): void
 add_action('init', 'chadpress_register_custom_blocks');
 
 /**
- * Disable a supported editor feature according to a Chadpress `customEditor.disabledSupports` item.
- *
- * @param array<string,mixed> $supports Block supports.
- * @param string             $support  Chadpress support token.
- * @return array<string,mixed>
+ * Register Chadpress block patterns (compound blocks as starter markup).
  */
-function chadpress_disable_block_support(array $supports, string $support): array
+function chadpress_register_block_patterns(): void
 {
-
-	switch ($support) {
-		case 'color':
-			$supports['color'] = is_array($supports['color'] ?? null) ? $supports['color'] : array();
-			$supports['color']['text'] = false;
-			$supports['color']['link'] = false;
-			$supports['color']['__experimentalDefaultControls'] = is_array($supports['color']['__experimentalDefaultControls'] ?? null)
-				? $supports['color']['__experimentalDefaultControls']
-				: array();
-			$supports['color']['__experimentalDefaultControls']['text'] = false;
-			break;
-
-		case 'backgroundColor':
-			$supports['color'] = is_array($supports['color'] ?? null) ? $supports['color'] : array();
-			$supports['color']['background'] = false;
-			$supports['color']['gradients']  = false;
-			$supports['color']['__experimentalDefaultControls'] = is_array($supports['color']['__experimentalDefaultControls'] ?? null)
-				? $supports['color']['__experimentalDefaultControls']
-				: array();
-			$supports['color']['__experimentalDefaultControls']['background'] = false;
-			break;
-
-		case 'fontSize':
-			$supports['typography'] = is_array($supports['typography'] ?? null) ? $supports['typography'] : array();
-			$supports['typography']['fontSize'] = false;
-			$supports['typography']['__experimentalDefaultControls'] = is_array($supports['typography']['__experimentalDefaultControls'] ?? null)
-				? $supports['typography']['__experimentalDefaultControls']
-				: array();
-			$supports['typography']['__experimentalDefaultControls']['fontSize'] = false;
-			break;
-		case '__experimentalFontWeight':
-			$supports['typography'] = is_array($supports['typography'] ?? null) ? $supports['typography'] : array();
-			$supports['typography']['__experimentalFontWeight'] = false;
-			break;
-		case '__experimentalFontStyle':
-			$supports['typography'] = is_array($supports['typography'] ?? null) ? $supports['typography'] : array();
-			$supports['typography']['__experimentalFontStyle'] = false;
-			break;
-		case '__experimentalTextTransform':
-			$supports['typography'] = is_array($supports['typography'] ?? null) ? $supports['typography'] : array();
-			$supports['typography']['__experimentalTextTransform'] = false;
-			break;
-		case '__experimentalTextDecoration':
-			$supports['typography'] = is_array($supports['typography'] ?? null) ? $supports['typography'] : array();
-			$supports['typography']['__experimentalTextDecoration'] = false;
-			break;
-		case '__experimentalLetterSpacing':
-			$supports['typography'] = is_array($supports['typography'] ?? null) ? $supports['typography'] : array();
-			$supports['typography']['__experimentalLetterSpacing'] = false;
-			break;
+	if (! function_exists('register_block_pattern')) {
+		return;
 	}
-	return $supports;
+
+	if (function_exists('register_block_pattern_category')) {
+		register_block_pattern_category(
+			'chadpress',
+			array(
+				'label' => __('Chadpress', 'chadpress'),
+			)
+		);
+	}
+
+	register_block_pattern(
+		'chadpress/standard-card',
+		array(
+			'title'       => __('Standard card', 'chadpress'),
+			'description' => __('Card with header, title, and text.', 'chadpress'),
+			'categories'  => array('chadpress'),
+			'content'     => trim(
+				<<<'PATTERN'
+<!-- wp:chadpress/card -->
+<!-- wp:chadpress/card-header -->
+<!-- wp:chadpress/card-title {"cardTitle":"Card title"} /-->
+<!-- /wp:chadpress/card-header -->
+<!-- wp:chadpress/card-content -->
+<!-- wp:chadpress/text {"content":"Card body text."} /-->
+<!-- /wp:chadpress/card-content -->
+<!-- /wp:chadpress/card -->
+PATTERN
+			),
+		)
+	);
 }
-
-/**
- * Apply `customEditor.disabledSupports` for a block name.
- *
- * @param string              $name     Block name, e.g. core/heading.
- * @param array<string,mixed> $supports Existing WordPress supports.
- * @return array<string,mixed>
- */
-function chadpress_apply_disabled_supports(string $name, array $supports): array
-{
-	$declarations = chadpress_block_declarations();
-	$block        = $declarations[$name] ?? null;
-
-	if (! is_array($block)) {
-		return $supports;
-	}
-
-	$custom_editor = $block['customEditor'] ?? array();
-	if (! is_array($custom_editor) || 'core' !== ($custom_editor['source'] ?? null)) {
-		return $supports;
-	}
-
-	$disabled = $custom_editor['disabledSupports'] ?? array();
-	if (! is_array($disabled)) {
-		return $supports;
-	}
-
-	foreach ($disabled as $support) {
-		if (is_string($support)) {
-			$supports = chadpress_disable_block_support($supports, $support);
-		}
-	}
-
-	return $supports;
-}
-
-/**
- * Filter block metadata while WordPress registers blocks from block.json.
- *
- * @param array<string,mixed> $metadata Block metadata.
- * @return array<string,mixed>
- */
-function chadpress_filter_block_type_metadata(array $metadata): array
-{
-	$name = $metadata['name'] ?? '';
-	if (! is_string($name) || '' === $name) {
-		return $metadata;
-	}
-
-	$supports = $metadata['supports'] ?? array();
-	if (! is_array($supports)) {
-		$supports = array();
-	}
-
-	$metadata['supports'] = chadpress_apply_disabled_supports($name, $supports);
-	return $metadata;
-}
-add_filter('block_type_metadata', 'chadpress_filter_block_type_metadata', 20);
-
-/**
- * Fallback filter for block registrations that have already resolved metadata.
- *
- * @param array<string,mixed> $args Block type registration args.
- * @param string              $name Block name.
- * @return array<string,mixed>
- */
-function chadpress_filter_register_block_type_args(array $args, string $name): array
-{
-	$supports = $args['supports'] ?? array();
-	if (! is_array($supports)) {
-		$supports = array();
-	}
-
-	$args['supports'] = chadpress_apply_disabled_supports($name, $supports);
-	return $args;
-}
-add_filter('register_block_type_args', 'chadpress_filter_register_block_type_args', 20, 2);
+add_action('init', 'chadpress_register_block_patterns');

@@ -1,9 +1,14 @@
 import { blockRegistry, type BlockName } from "./registry"
+import {
+  expandBlockCapabilities,
+  type BlockAttributeSpec,
+} from "./capabilities"
 
 /** Minimal `block.json` shape needed for defaulting and field lists */
 export type BlockMeta = {
   name: string
-  attributes: Record<string, { type: string; default?: unknown; richText?: boolean }>
+  attributes: Record<string, BlockAttributeSpec>
+  capabilities?: readonly string[]
   supports?: Record<string, unknown> & {
     innerBlocks?: boolean
     allowedBlocks?: string[]
@@ -22,10 +27,13 @@ export function getBlockDefinition(name: string): (typeof blockRegistry)[BlockNa
   return blockRegistry[name]
 }
 
-export function getBlockAttributeKeys<M extends { attributes: Record<string, unknown> }>(
+export function getBlockAttributeKeys<M extends {
+  attributes: Record<string, BlockAttributeSpec>
+  capabilities?: readonly string[]
+}>(
   meta: M,
 ): string[] {
-  return Object.keys(meta.attributes)
+  return Object.keys(expandBlockCapabilities(meta).attributes)
 }
 
 /**
@@ -66,17 +74,18 @@ export function applyAttributeDefaults<M extends BlockMeta>(
   meta: M,
   attributes: Record<string, unknown> | null | undefined,
 ): Record<string, unknown> {
+  const effectiveMeta = expandBlockCapabilities(meta)
   const out: Record<string, unknown> = { ...(attributes ?? {}) }
-  for (const key of Object.keys(meta.attributes)) {
+  for (const key of Object.keys(effectiveMeta.attributes)) {
     if (out[key] === undefined || out[key] === null) {
-      const spec = meta.attributes[key] as { default?: unknown }
+      const spec = effectiveMeta.attributes[key]
       if (Object.prototype.hasOwnProperty.call(spec, "default")) {
         out[key] = spec.default
       }
     }
   }
-  for (const key of Object.keys(meta.attributes)) {
-    const spec = meta.attributes[key] as { type?: string }
+  for (const key of Object.keys(effectiveMeta.attributes)) {
+    const spec = effectiveMeta.attributes[key]
     if (spec.type === "object" && typeof out[key] === "string") {
       const parsed = parseBlockObjectAttr(out[key])
       if (parsed !== undefined) {

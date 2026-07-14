@@ -1,0 +1,40 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/card-content",
+  "title": "Card Content",
+  "category": "chadpress",
+  "icon": "editor-paragraph",
+  "description": "Main card body — paragraphs, lists, buttons, etc.",
+  "textdomain": "chadpress",
+  "attributes": {},
+  "supports": {
+    "innerBlocks": true,
+    "allowedBlocks": [
+      "chadpress/text",
+      "chadpress/heading",
+      "chadpress/quote",
+      "chadpress/button",
+      "chadpress/section",
+      "chadpress/columns"
+    ],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom"
+  },
+  "example": {
+    "attributes": {}
+  },
+  "variations": []
+}

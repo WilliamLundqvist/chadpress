@@ -1,30 +1,37 @@
 import type { ReactNode } from "react"
+import type { VariantProps } from "class-variance-authority"
 
 import { cn } from "@repo/ui/lib/utils"
 
 import block from "./block.json"
-import { getColumnsClassName } from "./columns-layout"
+import { columnsVariants } from "./columns-variants"
 import type { ColumnsAttributes } from "./types"
-import { getColumnsInlineStyle } from "./columns-style"
 
 const { className: wrapperClassName } = block.customTailwind
+type ColumnsVariants = VariantProps<typeof columnsVariants>
 
 export function Columns({
-  verticalAlignment,
-  isStackedOnMobile,
-  style,
+  alignItems,
+  gap,
+  stackOnMobile,
   children,
   className,
-}: ColumnsAttributes & { children?: ReactNode; className?: string }) {
-  const v = typeof verticalAlignment === "string" ? verticalAlignment : undefined
-  const stacked = typeof isStackedOnMobile === "boolean" ? isStackedOnMobile : true
-  const layoutClasses = getColumnsClassName(v, stacked)
-  const inlineStyle = getColumnsInlineStyle(style)
-
+}: ColumnsAttributes & {
+  children?: ReactNode
+  className?: string
+}) {
   return (
     <div
-      className={cn(wrapperClassName || undefined, layoutClasses, className)}
-      style={Object.keys(inlineStyle).length > 0 ? inlineStyle : undefined}
+      data-slot="columns"
+      className={cn(
+        columnsVariants({
+          alignItems: alignItems as ColumnsVariants["alignItems"],
+          gap: gap as ColumnsVariants["gap"],
+          stackOnMobile,
+        }),
+        wrapperClassName || undefined,
+        className,
+      )}
     >
       {children}
     </div>

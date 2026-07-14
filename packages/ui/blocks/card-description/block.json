@@ -1,0 +1,44 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/card-description",
+  "title": "Card Description",
+  "category": "chadpress",
+  "icon": "text",
+  "description": "Muted supporting text below the card title.",
+  "textdomain": "chadpress",
+  "attributes": {
+    "cardDescription": {
+      "type": "string",
+      "default": "",
+      "richText": true,
+      "tagName": "span",
+      "placeholder": "Description"
+    }
+  },
+  "supports": {
+    "innerBlocks": false,
+    "allowedBlocks": [],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom",
+    "allowedRichText": ["bold", "italic", "link"]
+  },
+  "example": {
+    "attributes": {
+      "cardDescription": "Supporting card description."
+    }
+  },
+  "variations": []
+}

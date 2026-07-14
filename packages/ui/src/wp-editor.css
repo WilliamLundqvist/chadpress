@@ -1,70 +1,86 @@
-/**
- * 1:1 Gutenberg → frontend typography for `core/heading`.
- * These utilities mirror `blocks/heading/heading-variants.ts` but target WP’s
- * editor DOM (see https://github.com/WordPress/gutenberg for class names).
- */
 @layer components {
-  .wp-block-heading {
-    @apply scroll-m-20;
+  /**
+   * Match BlockRenderer’s inner `display: contents` so shadcn card flex/gap sees
+   * compound and layout children directly. This only affects Gutenberg’s
+   * InnerBlocks scaffolding.
+   */
+  [data-slot="section"] > .block-editor-inner-blocks,
+  [data-slot="section"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout,
+  [data-slot="columns"] > .block-editor-inner-blocks,
+  [data-slot="columns"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout,
+  [data-slot="column"] > .block-editor-inner-blocks,
+  [data-slot="column"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout,
+  [data-slot="card"] > .block-editor-inner-blocks,
+  [data-slot="card"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout,
+  [data-slot="card-header"] > .block-editor-inner-blocks,
+  [data-slot="card-header"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout,
+  [data-slot="card-content"] > .block-editor-inner-blocks,
+  [data-slot="card-content"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout,
+  [data-slot="card-footer"] > .block-editor-inner-blocks,
+  [data-slot="card-footer"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout {
+    display: contents;
   }
 
-  h1.wp-block-heading {
-    @apply text-4xl font-extrabold tracking-tight text-balance lg:text-5xl;
-  }
-  h2.wp-block-heading {
-    @apply text-3xl font-semibold tracking-tight;
-  }
-  h3.wp-block-heading {
-    @apply text-2xl font-semibold tracking-tight;
-  }
-  h4.wp-block-heading {
-    @apply text-xl font-semibold tracking-tight;
-  }
-  h5.wp-block-heading {
-    @apply text-lg font-semibold tracking-tight;
-  }
-  h6.wp-block-heading {
-    @apply text-base font-semibold tracking-tight;
-  }
-
-  .wp-block-heading.has-text-align-left {
-    @apply text-start;
-  }
-  .wp-block-heading.has-text-align-center {
-    @apply text-center;
-  }
-  .wp-block-heading.has-text-align-right {
-    @apply text-end;
+  /**
+   * Gutenberg wraps every child block in a `[data-block]` element. Flatten that
+   * final editor-only layer so the shared child component—not the wrapper—is the
+   * flex/grid item, matching BlockRenderer's layout tree.
+   */
+  [data-slot="section"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout
+    > [data-block],
+  [data-slot="columns"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout
+    > [data-block],
+  [data-slot="column"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout
+    > [data-block],
+  [data-slot="card"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout
+    > [data-block],
+  [data-slot="card-header"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout
+    > [data-block],
+  [data-slot="card-content"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout
+    > [data-block],
+  [data-slot="card-footer"]
+    > .block-editor-inner-blocks
+    > .block-editor-block-list__layout
+    > [data-block] {
+    display: contents;
   }
 
   .wp-block-chadpress-button .block-editor-rich-text__editable {
     @apply min-w-12;
   }
 
-  /**
-   * `> *` only widens the block wrapper. The chadpress button editor uses RichText with
-   * `w-fit` in `block.json`, and the shadcn `Button` is `inline-flex shrink-0` on the
-   * frontend, so the control needs these descendant rules in a stretched stack.
-   */
-  .is-layout-flex.is-vertical.is-content-justification-stretch > *,
-  .is-layout-flex.flex-col.items-stretch > * {
+  /* Keep editor block wrappers aligned with stretched section children. */
+  [data-slot="section"].flex-col.items-stretch > * {
     @apply w-full min-w-0;
   }
 
-  /* `!` beats `w-fit` on the RichText shell from `block.json` + `getButtonBlockClassName`. */
-  .is-layout-flex.is-vertical.is-content-justification-stretch
-    .wp-block-chadpress-button
-    > div,
-  .is-layout-flex.flex-col.items-stretch
-    .wp-block-chadpress-button
-    > div {
-    @apply !w-full !min-w-0;
-  }
-
-  .is-layout-flex.is-vertical.is-content-justification-stretch
-    .wp-block-chadpress-button
-    [data-slot="button"],
-  .is-layout-flex.flex-col.items-stretch
+  [data-slot="section"].flex-col.items-stretch
     .wp-block-chadpress-button
     [data-slot="button"] {
     @apply !w-full !min-w-0 shrink;

@@ -1,0 +1,36 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/card-header",
+  "title": "Card Header",
+  "category": "chadpress",
+  "icon": "heading",
+  "description": "Card header region for title and description.",
+  "textdomain": "chadpress",
+  "attributes": {},
+  "supports": {
+    "innerBlocks": true,
+    "allowedBlocks": ["chadpress/card-title", "chadpress/card-description"],
+    "template": [
+      ["chadpress/card-title", {}],
+      ["chadpress/card-description", {}]
+    ],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom"
+  },
+  "example": {
+    "attributes": {}
+  },
+  "variations": []
+}

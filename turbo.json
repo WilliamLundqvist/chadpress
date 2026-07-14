@@ -5,6 +5,10 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**"]
     },
+    "validate": {
+      "dependsOn": ["^validate"],
+      "outputs": []
+    },
     "lint": {},
     "dev": {
       "cache": false,

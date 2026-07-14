@@ -1,0 +1,120 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/section",
+  "title": "Section",
+  "category": "chadpress",
+  "icon": "screenoptions",
+  "description": "A layout container for stacked, row, or grid content.",
+  "textdomain": "chadpress",
+  "attributes": {
+    "layout": { "type": "string", "default": "stack" },
+    "justify": { "type": "string", "default": "start" },
+    "alignItems": { "type": "string", "default": "stretch" },
+    "gap": { "type": "string", "default": "md" },
+    "width": { "type": "string", "default": "full" },
+    "columns": { "type": "string", "default": "2" }
+  },
+  "supports": {
+    "innerBlocks": true,
+    "allowedBlocks": [
+      "chadpress/text",
+      "chadpress/heading",
+      "chadpress/quote",
+      "chadpress/button",
+      "chadpress/section",
+      "chadpress/columns",
+      "chadpress/card"
+    ],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [
+      {
+        "type": "select",
+        "bind": "layout",
+        "label": "Layout",
+        "options": ["stack", "row", "grid"]
+      }
+    ],
+    "inspector": [
+      {
+        "type": "select",
+        "bind": "justify",
+        "label": "Justify",
+        "options": ["start", "center", "end", "between"]
+      },
+      {
+        "type": "select",
+        "bind": "alignItems",
+        "label": "Align items",
+        "options": ["start", "center", "end", "stretch"]
+      },
+      {
+        "type": "select",
+        "bind": "gap",
+        "label": "Gap",
+        "options": ["none", "sm", "md", "lg"]
+      },
+      {
+        "type": "select",
+        "bind": "width",
+        "label": "Width",
+        "options": ["contained", "full"]
+      },
+      {
+        "type": "select",
+        "bind": "columns",
+        "label": "Grid columns",
+        "options": ["1", "2", "3", "4", "5", "6"]
+      }
+    ]
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom"
+  },
+  "example": {
+    "attributes": {
+      "layout": "stack",
+      "justify": "start",
+      "alignItems": "stretch",
+      "gap": "md",
+      "width": "full",
+      "columns": "2"
+    },
+    "innerBlocks": [
+      {
+        "name": "chadpress/heading",
+        "attributes": {
+          "content": "A reusable content section",
+          "level": 2,
+          "align": "left"
+        }
+      },
+      {
+        "name": "chadpress/text",
+        "attributes": {
+          "content": "Sections compose content without relying on WordPress Core layout blocks.",
+          "align": "left"
+        }
+      },
+      {
+        "name": "chadpress/button",
+        "attributes": {
+          "label": "Explore Chadpress",
+          "url": "#",
+          "variant": "default",
+          "size": "default",
+          "openInNewTab": false
+        }
+      }
+    ]
+  },
+  "variations": []
+}

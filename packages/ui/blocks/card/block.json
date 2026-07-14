@@ -1,0 +1,88 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/card",
+  "title": "Card",
+  "category": "chadpress",
+  "icon": "index-card",
+  "description": "Compound card container — use with Card Header, Card Content, and Card Footer.",
+  "textdomain": "chadpress",
+  "attributes": {},
+  "supports": {
+    "innerBlocks": true,
+    "allowedBlocks": [
+      "chadpress/card-header",
+      "chadpress/card-content",
+      "chadpress/card-footer"
+    ],
+    "template": [
+      ["chadpress/card-header", {}],
+      ["chadpress/card-content", {}],
+      ["chadpress/card-footer", {}]
+    ],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom"
+  },
+  "example": {
+    "attributes": {},
+    "innerBlocks": [
+      {
+        "name": "chadpress/card-header",
+        "attributes": {},
+        "innerBlocks": [
+          {
+            "name": "chadpress/card-title",
+            "attributes": { "cardTitle": "Composable card" }
+          },
+          {
+            "name": "chadpress/card-description",
+            "attributes": {
+              "cardDescription": "A complete compound block rendered from one declaration tree."
+            }
+          }
+        ]
+      },
+      {
+        "name": "chadpress/card-content",
+        "attributes": {},
+        "innerBlocks": [
+          {
+            "name": "chadpress/text",
+            "attributes": {
+              "content": "Card regions accept only their declared Chadpress children.",
+              "align": "left"
+            }
+          }
+        ]
+      },
+      {
+        "name": "chadpress/card-footer",
+        "attributes": {},
+        "innerBlocks": [
+          {
+            "name": "chadpress/button",
+            "attributes": {
+              "label": "Learn more",
+              "url": "#",
+              "variant": "outline",
+              "size": "sm",
+              "openInNewTab": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "variations": []
+}

@@ -9,7 +9,13 @@
   "textdomain": "chadpress",
 
   "attributes": {
-    "label": { "type": "string", "default": "Button", "richText": true },
+    "label": {
+      "type": "string",
+      "default": "Button",
+      "richText": true,
+      "tagName": "span",
+      "placeholder": "Button"
+    },
     "url": { "type": "string", "default": "" },
     "variant": { "type": "string", "default": "default" },
     "size": { "type": "string", "default": "default" },
@@ -63,16 +69,21 @@
     ]
   },
 
+  "capabilities": [],
+
   "customEditor": {
     "source": "custom",
-    "editable": {
-      "attribute": "label",
-      "tagName": "span",
-      "placeholder": "Button",
-      "className": "w-fit cursor-text"
-    },
-    "allowedRichText": ["bold", "italic"],
-    "disabledSupports": []
+    "allowedRichText": ["bold", "italic"]
+  },
+
+  "example": {
+    "attributes": {
+      "label": "Button",
+      "url": "",
+      "variant": "default",
+      "size": "default",
+      "openInNewTab": false
+    }
   },
 
   "variations": []

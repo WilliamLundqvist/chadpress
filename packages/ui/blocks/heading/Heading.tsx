@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { cn } from "@repo/ui/lib/utils"
 
 import block from "./block.json"
@@ -20,24 +22,26 @@ function clampLevel(level: number): 1 | 2 | 3 | 4 | 5 | 6 {
 export function Heading({
   content,
   level,
-  textAlign,
   className,
-}: HeadingAttributes & { className?: string }) {
+  slots,
+}: HeadingAttributes & {
+  className?: string
+  slots?: Record<string, ReactNode>
+}) {
   const n = clampLevel(level)
   const Tag = `h${n}` as HeadingTag
   const variant = styleMap.level[String(n) as LevelKey] as
     | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
-  const align = styleMap.textAlign[textAlign as keyof typeof styleMap.textAlign] as
-    | "start" | "center" | "end"
-
-  return (
-    <Tag
-      className={cn(
-        headingVariants({ variant, align }),
-        wrapperClassName || undefined,
-        className,
-      )}
-      dangerouslySetInnerHTML={{ __html: content }}
-    />
+  const contentSlot = slots?.content
+  const classes = cn(
+    headingVariants({ variant }),
+    wrapperClassName || undefined,
+    className,
   )
+
+  if (contentSlot !== undefined) {
+    return <Tag className={classes}>{contentSlot}</Tag>
+  }
+
+  return <Tag className={classes} dangerouslySetInnerHTML={{ __html: content }} />
 }

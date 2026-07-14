@@ -1,22 +1,24 @@
 {
   "$schema": "../block.schema.json",
   "apiVersion": 3,
-  "name": "core/columns",
+  "name": "chadpress/columns",
   "title": "Columns",
-  "category": "design",
+  "category": "chadpress",
   "icon": "columns",
-  "description": "Shadow for core/columns — flex row of core/column in the headless renderer.",
+  "description": "Responsive columns that stack on mobile by default.",
   "textdomain": "chadpress",
   "attributes": {
-    "verticalAlignment": { "type": "string" },
-    "isStackedOnMobile": { "type": "boolean", "default": true },
-    "style": { "type": "object" },
-    "layout": { "type": "object" }
+    "alignItems": { "type": "string", "default": "stretch" },
+    "gap": { "type": "string", "default": "md" },
+    "stackOnMobile": { "type": "boolean", "default": true }
   },
   "supports": {
     "innerBlocks": true,
-    "allowedBlocks": ["core/column"],
-    "template": []
+    "allowedBlocks": ["chadpress/column"],
+    "template": [
+      ["chadpress/column", { "width": "half" }],
+      ["chadpress/column", { "width": "half" }]
+    ]
   },
   "customTailwind": {
     "styleMap": {},
@@ -24,12 +26,72 @@
   },
   "customControls": {
     "toolbar": [],
-    "inspector": []
+    "inspector": [
+      {
+        "type": "select",
+        "bind": "alignItems",
+        "label": "Align items",
+        "options": ["start", "center", "end", "stretch"]
+      },
+      {
+        "type": "select",
+        "bind": "gap",
+        "label": "Gap",
+        "options": ["none", "sm", "md", "lg"]
+      },
+      {
+        "type": "toggle",
+        "bind": "stackOnMobile",
+        "label": "Stack on mobile"
+      }
+    ]
   },
+  "capabilities": [],
   "customEditor": {
-    "source": "core",
-    "allowedRichText": [],
-    "disabledSupports": []
+    "source": "custom"
+  },
+  "example": {
+    "attributes": {
+      "alignItems": "stretch",
+      "gap": "md",
+      "stackOnMobile": true
+    },
+    "innerBlocks": [
+      {
+        "name": "chadpress/column",
+        "attributes": { "width": "half" },
+        "innerBlocks": [
+          {
+            "name": "chadpress/heading",
+            "attributes": {
+              "content": "Built for composition",
+              "level": 3,
+              "align": "left"
+            }
+          },
+          {
+            "name": "chadpress/text",
+            "attributes": {
+              "content": "Columns render through the same component tree in Gutenberg and Next.js.",
+              "align": "left"
+            }
+          }
+        ]
+      },
+      {
+        "name": "chadpress/column",
+        "attributes": { "width": "half" },
+        "innerBlocks": [
+          {
+            "name": "chadpress/quote",
+            "attributes": {
+              "quote": "One contract, two runtimes.",
+              "citation": "Chadpress"
+            }
+          }
+        ]
+      }
+    ]
   },
   "variations": []
 }

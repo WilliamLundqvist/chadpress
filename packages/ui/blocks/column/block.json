@@ -1,20 +1,26 @@
 {
   "$schema": "../block.schema.json",
   "apiVersion": 3,
-  "name": "core/column",
+  "name": "chadpress/column",
   "title": "Column",
-  "category": "design",
+  "category": "chadpress",
   "icon": "editor-table",
-  "description": "Shadow for core/column — width and vertical alignment in the headless renderer.",
+  "description": "A semantic-width column for the Chadpress Columns block.",
   "textdomain": "chadpress",
   "attributes": {
-    "verticalAlignment": { "type": "string" },
-    "width": { "type": "string" },
-    "style": { "type": "object" }
+    "width": { "type": "string", "default": "full" }
   },
   "supports": {
     "innerBlocks": true,
-    "allowedBlocks": [],
+    "allowedBlocks": [
+      "chadpress/text",
+      "chadpress/heading",
+      "chadpress/quote",
+      "chadpress/button",
+      "chadpress/section",
+      "chadpress/columns",
+      "chadpress/card"
+    ],
     "template": []
   },
   "customTailwind": {
@@ -23,12 +29,39 @@
   },
   "customControls": {
     "toolbar": [],
-    "inspector": []
+    "inspector": [
+      {
+        "type": "select",
+        "bind": "width",
+        "label": "Width",
+        "options": [
+          "full",
+          "half",
+          "third",
+          "two-thirds",
+          "quarter",
+          "three-quarters"
+        ]
+      }
+    ]
   },
+  "capabilities": [],
   "customEditor": {
-    "source": "core",
-    "allowedRichText": [],
-    "disabledSupports": []
+    "source": "custom"
+  },
+  "example": {
+    "attributes": {
+      "width": "full"
+    },
+    "innerBlocks": [
+      {
+        "name": "chadpress/text",
+        "attributes": {
+          "content": "Column content",
+          "align": "left"
+        }
+      }
+    ]
   },
   "variations": []
 }

@@ -1,0 +1,44 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/card-title",
+  "title": "Card Title",
+  "category": "chadpress",
+  "icon": "title",
+  "description": "Card title text.",
+  "textdomain": "chadpress",
+  "attributes": {
+    "cardTitle": {
+      "type": "string",
+      "default": "",
+      "richText": true,
+      "tagName": "span",
+      "placeholder": "Title"
+    }
+  },
+  "supports": {
+    "innerBlocks": false,
+    "allowedBlocks": [],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom",
+    "allowedRichText": ["bold", "italic", "link"]
+  },
+  "example": {
+    "attributes": {
+      "cardTitle": "Card title"
+    }
+  },
+  "variations": []
+}

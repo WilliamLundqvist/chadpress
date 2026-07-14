@@ -1,0 +1,33 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/card-footer",
+  "title": "Card Footer",
+  "category": "chadpress",
+  "icon": "arrow-down-alt2",
+  "description": "Footer actions or meta for the card.",
+  "textdomain": "chadpress",
+  "attributes": {},
+  "supports": {
+    "innerBlocks": true,
+    "allowedBlocks": ["chadpress/button", "chadpress/text"],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": [],
+  "customEditor": {
+    "source": "custom"
+  },
+  "example": {
+    "attributes": {}
+  },
+  "variations": []
+}

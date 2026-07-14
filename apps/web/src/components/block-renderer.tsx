@@ -1,24 +1,19 @@
 import type { ComponentType, ReactNode } from "react";
 
-import { getBlockDefinition, isBlockName } from "@repo/ui/blocks";
+import {
+  getCapabilityClassName,
+  getBlockDefinition,
+  isBlockName,
+  isLayoutContainerBlock,
+} from "@repo/ui/blocks";
 import {
   normalizeEditorBlock,
   type WpEditorBlock,
 } from "../lib/wp-block-query";
 
-const LAYOUT_ANCESTORS = new Set([
-  "core/group",
-  "core/columns",
-  "core/column",
-]);
-
 type BlockRendererProps = {
   blocks: WpEditorBlock[] | null | undefined;
 };
-
-function isLayoutContainer(name: string): boolean {
-  return LAYOUT_ANCESTORS.has(name);
-}
 
 /**
  * Renders a flat (or tree) of WPGraphQL `editorBlocks` by looking up
@@ -30,12 +25,9 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
     return null;
   }
   return (
-    <div className="chadpress-blocks max-w-7xl mx-auto w-full space-y-4">
-      {blocks.map((block, index) => (
-        <BlockNode
-          key={`${block.name}-${index}`}
-          block={block}
-        />
+    <div className="chadpress-blocks">
+      {blocks.map((block) => (
+        <BlockNode key={block.clientId} block={block} />
       ))}
     </div>
   );
@@ -49,6 +41,7 @@ function BlockNode({
   parentName?: string;
 }) {
   if (!isBlockName(block.name)) {
+    console.error(`[BlockRenderer] Unsupported block: ${block.name}`);
     if (process.env.NODE_ENV === "development") {
       return (
         <div className="rounded border border-dashed border-amber-600/50 bg-amber-50 p-2 text-sm text-amber-900">
@@ -62,11 +55,13 @@ function BlockNode({
 
   const def = getBlockDefinition(block.name);
   if (!def) {
+    console.warn(`[BlockRenderer] Missing block definition: ${block.name}`);
     return null;
   }
 
   const raw = normalizeEditorBlock(block.name, block.attributes);
   if (raw === null) {
+    console.warn(`[BlockRenderer] Could not normalize block: ${block.name}`);
     return null;
   }
 
@@ -75,22 +70,22 @@ function BlockNode({
   >;
   const supportsInnerBlocks = Boolean(def.meta.supports?.innerBlocks);
   const isChildOfLayout =
-    parentName !== undefined && isLayoutContainer(parentName);
+    parentName !== undefined && isLayoutContainerBlock(parentName);
   const innerUseContents =
-    supportsInnerBlocks && isLayoutContainer(block.name);
+    supportsInnerBlocks && isLayoutContainerBlock(block.name);
+  const capabilityClassName = getCapabilityClassName(
+    def.meta as Parameters<typeof getCapabilityClassName>[0],
+    raw,
+  );
 
   const innerBlocks =
     block.innerBlocks && block.innerBlocks.length > 0 ? (
       <div
-        className={
-          innerUseContents
-            ? "contents"
-            : "chadpress-inner relative mt-2 space-y-2 border-l-2 border-neutral-200 pl-3"
-        }
+        className={innerUseContents ? "contents" : "chadpress-inner"}
       >
-        {block.innerBlocks.map((child, index) => (
+        {block.innerBlocks.map((child) => (
           <BlockNode
-            key={`${child.name}-nested-${index}`}
+            key={child.clientId}
             block={child}
             parentName={block.name}
           />
@@ -109,7 +104,7 @@ function BlockNode({
     >
       <Comp
         {...(raw as Record<string, unknown>)}
-        className="chadpress-block__inner"
+        className={capabilityClassName}
       >
         {supportsInnerBlocks ? innerBlocks : null}
       </Comp>

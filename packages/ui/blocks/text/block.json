@@ -1,0 +1,46 @@
+{
+  "$schema": "../block.schema.json",
+  "apiVersion": 3,
+  "name": "chadpress/text",
+  "title": "Text",
+  "category": "chadpress",
+  "icon": "editor-paragraph",
+  "description": "Rich text rendered with Chadpress typography.",
+  "textdomain": "chadpress",
+  "attributes": {
+    "content": {
+      "type": "string",
+      "default": "",
+      "richText": true,
+      "tagName": "span",
+      "placeholder": "Write text…"
+    }
+  },
+  "supports": {
+    "innerBlocks": false,
+    "allowedBlocks": [],
+    "template": [],
+    "html": false
+  },
+  "customTailwind": {
+    "styleMap": {},
+    "className": ""
+  },
+  "customControls": {
+    "toolbar": [],
+    "inspector": []
+  },
+  "capabilities": ["align"],
+  "customEditor": {
+    "source": "custom",
+    "allowedRichText": ["bold", "italic", "link"],
+    "splitting": true
+  },
+  "example": {
+    "attributes": {
+      "content": "Write text…",
+      "align": "left"
+    }
+  },
+  "variations": []
+}

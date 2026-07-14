@@ -1,142 +1,217 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import Ajv from "ajv"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const blocksDir = path.join(root, "blocks")
+const errors = []
 
-function readJson(relativePath) {
-  return JSON.parse(fs.readFileSync(path.join(root, relativePath), "utf8"))
+function report(message) {
+  errors.push(`[block-contract] ${message}`)
 }
 
-function readText(relativePath) {
-  return fs.readFileSync(path.join(root, relativePath), "utf8")
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"))
 }
 
-function fail(message) {
-  throw new Error(`[block-contract] ${message}`)
+function parseCapabilities(controlTypes) {
+  const declarations = readJson(path.join(blocksDir, "capabilities.json"))
+  const capabilities = new Map()
+
+  for (const [name, declaration] of Object.entries(declarations)) {
+    const attributes = new Set(Object.keys(declaration.attributes ?? {}))
+    const controls = [
+      ...(declaration.controls?.toolbar ?? []),
+      ...(declaration.controls?.inspector ?? []),
+    ]
+
+    for (const control of controls) {
+      if (!controlTypes.has(control.type)) {
+        report(`capability "${name}" uses control type "${control.type}" that the editor does not implement`)
+      }
+      if (!attributes.has(control.bind)) {
+        report(`capability "${name}" control binds unknown attribute "${control.bind}"`)
+      }
+    }
+    for (const attribute of Object.keys(declaration.classMap ?? {})) {
+      if (!attributes.has(attribute)) {
+        report(`capability "${name}" classMap.${attribute} does not bind a capability attribute`)
+      }
+    }
+
+    capabilities.set(name, { attributes, controls })
+  }
+  return capabilities
 }
 
-const allowedDisabledSupports = new Set([
-  "color",
-  "backgroundColor",
-  "fontSize",
-  "__experimentalFontWeight",
-  "__experimentalFontStyle",
-  "__experimentalTextTransform",
-  "__experimentalTextDecoration",
-  "__experimentalLetterSpacing",
-])
+function sourceFilesForStyleChecks(folderName) {
+  const folderPath = path.join(blocksDir, folderName)
+  const files = fs
+    .readdirSync(folderPath)
+    .filter((name) => /\.(?:ts|tsx)$/.test(name))
+    .map((name) => path.join(folderPath, name))
+  const sharedComponent = path.join(root, "src/components/ui", `${folderName}.tsx`)
+  if (fs.existsSync(sharedComponent)) files.push(sharedComponent)
+  return files
+}
 
-function validateStyleMapAttributes(blockName, block) {
-  const attributeNames = new Set(Object.keys(block.attributes ?? {}))
+function validateStyleTokens(folderName, styleMap) {
+  const candidates = sourceFilesForStyleChecks(folderName)
+    .map((filePath) => ({
+      filePath,
+      source: fs.readFileSync(filePath, "utf8"),
+    }))
+    .filter(({ source }) => /\bcva\s*\(|VariantTokens|Variants\s*=/.test(source))
+
+  for (const [attribute, mapping] of Object.entries(styleMap)) {
+    const tokens = [...new Set(Object.values(mapping))]
+    const tokenPattern = (token) =>
+      new RegExp(`(?:^|[,{]\\s*)(?:${escapeRegex(token)}|["']${escapeRegex(token)}["'])\\s*:`, "m")
+    const relevant = candidates.filter(({ source }) =>
+      tokens.some((token) => tokenPattern(token).test(source)),
+    )
+    if (relevant.length === 0) continue
+
+    for (const token of tokens) {
+      if (!relevant.some(({ source }) => tokenPattern(token).test(source))) {
+        report(
+          `${folderName} styleMap.${attribute} uses token "${token}" not found in the corresponding CVA/style token source`,
+        )
+      }
+    }
+  }
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+const schema = readJson(path.join(blocksDir, "block.schema.json"))
+const ajv = new Ajv({ allErrors: true, strict: false })
+const validateSchema = ajv.compile(schema)
+const controlTypes = new Set(
+  schema.definitions?.customControl?.properties?.type?.enum ?? [],
+)
+const capabilities = parseCapabilities(controlTypes)
+const folders = fs
+  .readdirSync(blocksDir, { withFileTypes: true })
+  .filter(
+    (entry) =>
+      entry.isDirectory() &&
+      fs.existsSync(path.join(blocksDir, entry.name, "block.json")),
+  )
+  .map((entry) => entry.name)
+  .sort()
+const blocksByFolder = new Map(
+  folders.map((folderName) => [
+    folderName,
+    readJson(path.join(blocksDir, folderName, "block.json")),
+  ]),
+)
+const blocksByName = new Map(
+  [...blocksByFolder.values()].map((block) => [block.name, block]),
+)
+
+function effectiveAttributeNames(block) {
+  const names = new Set(Object.keys(block.attributes ?? {}))
+  for (const capabilityName of block.capabilities ?? []) {
+    const capability = capabilities.get(capabilityName)
+    if (!capability) continue
+    for (const attribute of capability.attributes) names.add(attribute)
+  }
+  return names
+}
+
+function validateExampleChildren(parentBlock, children, examplePath) {
+  if (!Array.isArray(children)) return
+  const allowedBlocks = new Set(parentBlock.supports?.allowedBlocks ?? [])
+
+  for (const [index, child] of children.entries()) {
+    if (!child || typeof child !== "object") continue
+    const childPath = `${examplePath}.innerBlocks[${index}]`
+    const childBlock = blocksByName.get(child.name)
+    if (!childBlock) {
+      report(`${childPath} references unknown block "${child.name}"`)
+      continue
+    }
+    if (!parentBlock.supports?.innerBlocks) {
+      report(`${examplePath} does not support inner blocks`)
+    } else if (!allowedBlocks.has(child.name)) {
+      report(`${childPath} uses "${child.name}", which is not allowed by "${parentBlock.name}"`)
+    }
+
+    const childAttributes = effectiveAttributeNames(childBlock)
+    for (const attribute of Object.keys(child.attributes ?? {})) {
+      if (!childAttributes.has(attribute)) {
+        report(`${childPath} uses unknown attribute "${attribute}"`)
+      }
+    }
+    validateExampleChildren(childBlock, child.innerBlocks, childPath)
+  }
+}
+
+for (const folderName of folders) {
+  const block = blocksByFolder.get(folderName)
+  if (block.name !== `chadpress/${folderName}`) {
+    report(`${folderName} block.json name must be "chadpress/${folderName}", got "${block.name}"`)
+    continue
+  }
+  if (!validateSchema(block)) {
+    for (const error of validateSchema.errors ?? []) {
+      report(`${folderName}${error.instancePath || " block.json"} ${error.message}`)
+    }
+  }
+
+  const effectiveAttributes = new Set(Object.keys(block.attributes ?? {}))
+  const effectiveControls = [
+    ...(block.customControls?.toolbar ?? []),
+    ...(block.customControls?.inspector ?? []),
+  ]
+
+  for (const capabilityName of block.capabilities ?? []) {
+    const capability = capabilities.get(capabilityName)
+    if (!capability) {
+      report(`${folderName} uses unknown capability "${capabilityName}"`)
+      continue
+    }
+    for (const attribute of capability.attributes) effectiveAttributes.add(attribute)
+    effectiveControls.push(...capability.controls)
+  }
+
   const styleMap = block.customTailwind?.styleMap ?? {}
+  for (const attribute of Object.keys(styleMap)) {
+    if (!effectiveAttributes.has(attribute)) {
+      report(`${folderName} styleMap.${attribute} does not bind an effective attribute`)
+    }
+  }
+  validateStyleTokens(folderName, styleMap)
 
-  for (const name of Object.keys(styleMap)) {
-    if (!attributeNames.has(name)) {
-      fail(`${blockName} styleMap.${name} does not map to an attribute in block.json`)
+  for (const control of effectiveControls) {
+    if (!effectiveAttributes.has(control.bind)) {
+      report(`${folderName} ${control.type} control binds unknown attribute "${control.bind}"`)
+    }
+    if (!controlTypes.has(control.type)) {
+      report(`${folderName} uses control type "${control.type}" that the editor does not implement`)
     }
   }
 
-  return styleMap
-}
-
-function validateDisabledSupports(blockName, block) {
-  for (const support of block.customEditor?.disabledSupports ?? []) {
-    if (!allowedDisabledSupports.has(support)) {
-      fail(`${blockName} customEditor.disabledSupports contains unsupported value "${support}"`)
+  if (!block.example || typeof block.example.attributes !== "object") {
+    report(`${folderName} must provide example.attributes`)
+  } else {
+    for (const attribute of Object.keys(block.example.attributes)) {
+      if (!effectiveAttributes.has(attribute)) {
+        report(`${folderName} example uses unknown attribute "${attribute}"`)
+      }
     }
-  }
-}
-
-function extractObjectKeys(source, objectPath) {
-  const parts = objectPath.split(".")
-  let searchStart = 0
-  for (const [partIndex, part] of parts.entries()) {
-    const variableMatch =
-      partIndex === 0
-        ? new RegExp(`(?:const|let|var)\\s+${part}\\s*=\\s*{`, "m").exec(source.slice(searchStart))
-        : null
-    const index = variableMatch
-      ? searchStart + variableMatch.index + variableMatch[0].lastIndexOf("{")
-      : source.indexOf(`${part}:`, searchStart)
-    if (index === -1) {
-      fail(`Could not find object segment "${part}" in ${objectPath}`)
-    }
-    searchStart = variableMatch ? index : source.indexOf("{", index)
-    if (searchStart === -1) {
-      fail(`Could not find object body for "${part}" in ${objectPath}`)
-    }
-  }
-
-  let depth = 0
-  let end = searchStart
-  for (; end < source.length; end += 1) {
-    const char = source[end]
-    if (char === "{") depth += 1
-    if (char === "}") {
-      depth -= 1
-      if (depth === 0) break
-    }
-  }
-
-  const body = source.slice(searchStart + 1, end)
-  return new Set([...body.matchAll(/^\s*([A-Za-z0-9_-]+)\s*:/gm)].map((m) => m[1]))
-}
-
-function validateHeading() {
-  const block = readJson("blocks/heading/block.json")
-  const variantsSource = readText("blocks/heading/heading-variants.ts")
-
-  const styleMap = validateStyleMapAttributes("heading", block)
-
-  const variantKeys = extractObjectKeys(variantsSource, "headingVariantTokens.variant")
-  const alignKeys = extractObjectKeys(variantsSource, "headingVariantTokens.align")
-
-  for (const [level, token] of Object.entries(styleMap.level ?? {})) {
-    if (!variantKeys.has(token)) {
-      fail(`heading styleMap.level.${level} -> "${token}" has no matching headingVariantTokens.variant key`)
-    }
-  }
-
-  for (const [align, token] of Object.entries(styleMap.textAlign ?? {})) {
-    if (!alignKeys.has(token)) {
-      fail(`heading styleMap.textAlign.${align} -> "${token}" has no matching headingVariantTokens.align key`)
-    }
-  }
-
-  validateDisabledSupports("heading", block)
-
-  const allowedRichText = new Set(["bold", "italic", "link"])
-  for (const format of block.customEditor?.allowedRichText ?? []) {
-    if (!allowedRichText.has(format)) {
-      fail(`heading customEditor.allowedRichText contains unsupported value "${format}"`)
-    }
+    validateExampleChildren(block, block.example.innerBlocks, `${folderName} example`)
   }
 }
 
-function validateButton() {
-  const block = readJson("blocks/button/block.json")
-  const buttonSource = readText("src/components/ui/button.tsx")
-
-  const styleMap = validateStyleMapAttributes("button", block)
-  const variantKeys = extractObjectKeys(buttonSource, "variants.variant")
-  const sizeKeys = extractObjectKeys(buttonSource, "variants.size")
-
-  for (const [variant, token] of Object.entries(styleMap.variant ?? {})) {
-    if (!variantKeys.has(token)) {
-      fail(`button styleMap.variant.${variant} -> "${token}" has no matching button variant`)
-    }
-  }
-
-  for (const [size, token] of Object.entries(styleMap.size ?? {})) {
-    if (!sizeKeys.has(token)) {
-      fail(`button styleMap.size.${size} -> "${token}" has no matching button size`)
-    }
-  }
-
-  validateDisabledSupports("button", block)
+if (errors.length > 0) {
+  console.error(errors.join("\n"))
+  console.error(`\nBlock contract validation failed with ${errors.length} error(s)`)
+  process.exit(1)
 }
 
-validateHeading()
-validateButton()
-console.log("Block contract validation passed")
+console.log(`Block contract validation passed for ${folders.length} blocks`)
